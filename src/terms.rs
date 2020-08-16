@@ -4,6 +4,7 @@ use crate::terms::Term::Var;
 use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::subsitutions::Substitution;
+use crate::letters::LETTERS;
 
 // Note that derived partialeq will say
 // λx.x != λy.y
@@ -38,18 +39,7 @@ impl Term {
                 a => a.to_string(),
             }
         }).collect()
-
-        //self.print().chars().fold("".to_string(), |acc, cur| {
-        //    acc + { 
-        //        match cur {
-        //            '(' => { depth += 1; format!("\n{}", depth_tabs()) },
-        //            ')' => { depth -= 1; format!("\n{}", depth_tabs()) },
-        //            a => a,
-        //        }
-        //    }
-        //})
     }
-
 
 
 
@@ -59,7 +49,7 @@ impl Term {
         match self {
 
             // Normal forms
-            Term::Var(c)      => Var(c), 
+            Term::Var(c)      => self,
             Term::App(_, _)   => App(Box::new(self), Box::new(replace_with)),
 
             // Keep applying
@@ -96,11 +86,22 @@ impl Term {
                 //dbg!(&a, sub.to_replace, c, a.free_vars());
                 //dbg!(a.free_vars().contains(&c));
 
-                match sub.to_replace != c {
-                    true  => Abs(c, Box::new(a.substitue(sub))),
-                    false => Abs(c, a),
+                match sub.to_replace == c {
+                    // Stop if [x -> s]λx.(anything) because overridden by scope
+                    true => Abs(c, a),
+
+                    false  => match sub.replace_with.free_vars().contains(&c) {
+                        // If a variable you're substituting with will get "captured"
+                        // by the current abstraction variable when substituted it in, 
+                        // replace the abstraction variable with a Greek letter
+                        true => Abs(c, Box::new(a.substitue(sub))),
+
+                        // Otherwise, continue as normal
+                        false => Abs(c, Box::new(a.substitue(sub))),
+                    }
                 }
             },
+
             Term::App(a, b)   => App(Box::new(a.substitue(sub.clone())), 
                                      Box::new(b.substitue(sub))),
         };

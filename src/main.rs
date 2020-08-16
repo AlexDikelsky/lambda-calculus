@@ -4,11 +4,13 @@ mod terms;
 mod subsitutions;
 mod combinators;
 mod constants;
+mod letter_list;
 
 use crate::terms::Term::Var;
 use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::combinators::tru;
+use crate::combinators::and;
 use crate::combinators::fls;
 use crate::constants::var_a;
 use crate::constants::var_b;
@@ -43,6 +45,9 @@ fn main() {
 
     //dbg!(&lhs_y_free_1);
     //dbg!(&rhs_y_free_1);
+    
+
+    dbg!(and().apply_abs(*fls()).apply_abs(*fls()));
 }
 
 

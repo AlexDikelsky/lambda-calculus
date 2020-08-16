@@ -4,6 +4,7 @@ use crate::terms::Term::App;
 use crate::terms::Term;
 use crate::constants::var_b;
 use crate::constants::var_c;
+use crate::constants::var_x;
 
 // λx.x
 pub fn id() -> Box<Term> {
@@ -32,4 +33,16 @@ pub fn and() -> Box<Term> {
             ))
         )
 
+}
+
+// Ω = (λx. x x)(λx. x x)
+pub fn omega() -> Box<Term> {
+    let o = Box::new(
+        Abs('x', Box::new(
+            App(var_x(), var_x()))));
+
+    Box::new(
+        App(
+            Box::new(o.clone()), 
+            Box::new(*o)))
 }

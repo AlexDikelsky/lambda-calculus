@@ -19,6 +19,10 @@ pub fn var_c() -> Box<Term> {
     gen('c')
 }
 
+pub fn var_w() -> Box<Term> {
+    gen('x')
+}
+
 pub fn var_x() -> Box<Term> {
     gen('x')
 }
