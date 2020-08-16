@@ -176,14 +176,14 @@ fn capture_book() {
     // λz.y to λz.z
     let rhs = Abs('z', var_z());
 
-    assert!(applied != rhs);
+    assert!(&applied != &rhs);
 }
 
 
-//#[test]
-//fn test_and() {
-//    dbg!(and().apply_abs(*fls()).apply_abs(*fls()));
-//    assert!(false);
-//}
+#[test]
+fn test_and() {
+    dbg!(and().strict_apply(*fls()).strict_apply(*fls()));
+    assert!(false);
+}
 
 

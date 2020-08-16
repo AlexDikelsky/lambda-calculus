@@ -36,13 +36,8 @@ pub fn and() -> Box<Term> {
 }
 
 // Ω = (λx. x x)(λx. x x)
-pub fn omega() -> Box<Term> {
-    let o = Box::new(
-        Abs('x', Box::new(
-            App(var_x(), var_x()))));
-
+pub fn omega_parts() -> Box<Term> {
     Box::new(
-        App(
-            Box::new(o.clone()), 
-            Box::new(*o)))
+        Abs('x', Box::new(
+            App(var_x(), var_x()))))
 }

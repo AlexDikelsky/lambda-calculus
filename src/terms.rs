@@ -6,8 +6,6 @@ use crate::terms::Term::App;
 use crate::subsitutions::Substitution;
 use crate::letter_list::LETTERS;
 
-// Note that derived partialeq will say
-// λx.x != λy.y
 #[derive(PartialEq)]
 pub enum Term {
     Var(char),
@@ -65,27 +63,23 @@ impl Term {
             Term::Var(c)      => if c == sub.to_replace { *sub.replace_with } else { Var(c) },
 
             Term::Abs(c, a)   => {
-                //dbg!(&a, sub.to_replace, c, a.free_vars());
-                //dbg!(a.free_vars().contains(&c));
-
                 match sub.to_replace == c {
                     // Stop if [x -> s]λx.(anything) because overridden by scope
                     true => Abs(c, a),
 
                     false  => match sub.replace_with.free_vars().contains(&c) {
-                        // If a variable you're substituting with will get "captured"
+                        // If the term you're substituting with will get "captured"
                         // by the current abstraction variable when substituted it in, 
                         // replace the abstraction variable with a Greek letter
-                        _ => Abs(c, Box::new(a.substitue(sub))),
-                        //true => {
-                        //    let new_letter = next_unused_var_name();
-                        //}
-                        //    //let replaced_letter = Abs(new_letter, Box::new(
-                        //    // HERE DUDE Abs(new_letter, Box::new(a.substitue(sub))),
 
-                        //// Otherwise, continue as normal
-                        //false => Abs(c, Box::new(a.substitue(sub))),
-                        //}
+                        true => {
+                            let new_letter = a.next_unused_var_name();
+                            Abs(new_letter,
+                                Box::new(a.replace_var_name(c, new_letter)))
+                        },
+
+                        // Otherwise, continue as normal
+                        false => Abs(c, Box::new(a.substitue(sub))),
                     }
                 }
             },
@@ -115,6 +109,7 @@ impl Term {
     fn replace_var_name(self, old_letter: char, new_letter: char) -> Self {
         match self {
             Term::Var(c) => match c == new_letter { 
+                
                 true  => panic!("I thought we agreed not to use Greek letters"),
                 false => match c == old_letter {
                     true  => Var(new_letter),
@@ -137,7 +132,71 @@ impl Term {
     }
 
 
+    pub fn strict_apply(self, replace_with: Term) -> Self {
+        println!("Evaluing {}{}", &self, &replace_with);
+        match self {
+            Term::Var(_)    => self,
+            Term::Abs(c, a) => a.strict_substitute(Substitution {
+                to_replace: c,
+                replace_with: Box::new(replace_with)
+            }),
+            Term::App(a, b) => App(
+                Box::new(a.strict_apply(replace_with.clone())),
+                Box::new(b.strict_apply(replace_with)))
+        }
+    }
+
+
+    fn strict_substitute(self, sub: Substitution) -> Self {
+        println!("Substitg {} in {}", &sub, &self);
+        let saved_copy = match self {
+            Term::Var(c) => match sub.to_replace == c {
+                true  => *sub.replace_with,
+                false => Var(c),
+            },
+
+            Term::App(a, b) => match *a {
+                //Done with first, but check next value
+                Term::Var(char_in_var) => App(
+                    Box::new(Var(char_in_var)), 
+                    Box::new(b.strict_substitute(sub))),
+
+                //something like (λa.a)b, substitue b for the bounds var of a
+                // Need to put logic for fixing names here,
+                Term::Abs(inner_abs_var, abstration_term) => abstration_term.strict_substitute(
+                    Substitution {
+                        to_replace: inner_abs_var,
+                        replace_with: b,
+                    }),
+
+                Term::App(x, y) => App(
+                    Box::new(x.strict_substitute(sub.clone())),
+                    Box::new(y.strict_substitute(sub))),
+            }
+
+            // Don't need to check for FV in sub.with
+            // Also keep evaluataing even if current letter = sub.for
+            Term::Abs(c, a) => a.strict_substitute(sub),
+
+        };
+        println!("Result: {}", &saved_copy);
+        saved_copy
+    }
+        
+
+
+
+                    
+
+
+
 }
+
+//impl PartialEq for Term {
+//    fn eq(&self, other: &Self) -> bool {
+//
+//    }
+//}
 
 impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

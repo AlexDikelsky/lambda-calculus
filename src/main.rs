@@ -6,6 +6,7 @@ mod combinators;
 mod constants;
 mod letter_list;
 
+use crate::terms::Term;
 use crate::terms::Term::Var;
 use crate::terms::Term::Abs;
 use crate::terms::Term::App;
@@ -17,6 +18,7 @@ use crate::constants::var_b;
 use crate::constants::var_x;
 use crate::constants::var_y;
 use crate::constants::var_z;
+use crate::combinators::omega_parts;
 
 fn main() {
     //let id = Abs('x', Box::new(Var('x')));
@@ -46,8 +48,7 @@ fn main() {
     //dbg!(&lhs_y_free_1);
     //dbg!(&rhs_y_free_1);
     
-
-    dbg!(and().apply_abs(*fls()).apply_abs(*fls()));
+    //dbg!(and().apply_abs(*fls()).apply_abs(*fls()));
 }
 
 
