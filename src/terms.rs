@@ -57,9 +57,13 @@ impl Term {
         println!("Evaluing {}{}", &self, &replace_with);
 
         match self {
-            Term::Var(c)      => Var(c),
+
+            // Normal forms
+            Term::Var(c)      => Var(c), 
+            Term::App(_, _)   => App(Box::new(self), Box::new(replace_with)),
+
+            // Keep applying
             Term::Abs(c, a)   => a.substitue(Substitution { to_replace: c, replace_with: Box::new(replace_with) }),
-            Term::App(a, b)   => App(a, b),
         }
     }
 

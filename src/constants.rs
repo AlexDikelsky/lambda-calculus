@@ -3,10 +3,29 @@ use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::terms::Term;
 
+fn gen(c: char) -> Box<Term> {
+    Box::new(Var(c))
+}
+
 pub fn var_a() -> Box<Term> {
-    Box::new(Var('a'))
+    gen('a')
 }
 
 pub fn var_b() -> Box<Term> {
-    Box::new(Var('b'))
+    gen('b')
+}
+
+pub fn var_c() -> Box<Term> {
+    gen('c')
+}
+
+pub fn var_x() -> Box<Term> {
+    gen('x')
+}
+
+pub fn var_y() -> Box<Term> {
+    gen('y')
+}
+pub fn var_z() -> Box<Term> {
+    gen('z')
 }
