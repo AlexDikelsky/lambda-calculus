@@ -163,11 +163,26 @@ impl Term {
 
                 //something like (λa.a)b, substitue b for the bounds var of a
                 // Need to put logic for fixing names here,
-                Term::Abs(inner_abs_var, abstration_term) => abstration_term.strict_substitute(
-                    Substitution {
-                        to_replace: inner_abs_var,
-                        replace_with: b,
-                    }),
+                Term::Abs(inner_abs_var, abstration_term) => 
+                    match sub.replace_with.free_vars().contains(&inner_abs_var) {
+
+                        //Need to change inner vars, then keep substituting
+                        true => {
+                            let new_letter = abstration_term.next_unused_var_name();
+                            abstration_term.replace_var_name(inner_abs_var, new_letter)
+                                .strict_substitute(Substitution {
+                                    to_replace: new_letter,
+                                    replace_with: b,
+                                })
+                        },
+
+                        //Don't need to change inner vars
+                        // Keep substituting
+                        false => abstration_term.strict_substitute(Substitution {
+                            to_replace: inner_abs_var,
+                            replace_with: b,
+                        }),
+                    }
 
                 Term::App(x, y) => App(
                     Box::new(x.strict_substitute(sub.clone())),
