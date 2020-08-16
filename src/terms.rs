@@ -4,7 +4,7 @@ use crate::terms::Term::Var;
 use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::subsitutions::Substitution;
-use crate::letters::LETTERS;
+use crate::letter_list::LETTERS;
 
 // Note that derived partialeq will say
 // λx.x != λy.y
@@ -24,24 +24,6 @@ impl Term {
             Term::App(a, b)   => format!("({} {})", a.print(), b.print()),
         }
     }
-
-    pub fn print_debug(&self) -> String {
-
-        // Paren stack will always be balanced, so don't need to check
-        // that this number is greater than 0
-        let mut depth = 0;
-        let n_tabs = |x| (0..x).fold("".to_string(), |acc, prev| acc + "  ");
-
-        self.print().chars().map(|c| {
-            match c {
-                '(' => { depth += 1; "(\n".to_string() + &n_tabs(depth) },
-                ')' => { depth -= 1; "\n".to_string() + &n_tabs(depth) + ")" },
-                a => a.to_string(),
-            }
-        }).collect()
-    }
-
-
 
     pub fn apply_abs(self, replace_with: Term) -> Self {
         println!("Evaluing {}{}", &self, &replace_with);
@@ -94,10 +76,16 @@ impl Term {
                         // If a variable you're substituting with will get "captured"
                         // by the current abstraction variable when substituted it in, 
                         // replace the abstraction variable with a Greek letter
-                        true => Abs(c, Box::new(a.substitue(sub))),
+                        _ => Abs(c, Box::new(a.substitue(sub))),
+                        //true => {
+                        //    let new_letter = next_unused_var_name();
+                        //}
+                        //    //let replaced_letter = Abs(new_letter, Box::new(
+                        //    // HERE DUDE Abs(new_letter, Box::new(a.substitue(sub))),
 
-                        // Otherwise, continue as normal
-                        false => Abs(c, Box::new(a.substitue(sub))),
+                        //// Otherwise, continue as normal
+                        //false => Abs(c, Box::new(a.substitue(sub))),
+                        //}
                     }
                 }
             },
@@ -108,6 +96,47 @@ impl Term {
         println!("Result: {}", &x);
         x
     }
+
+    fn get_all_var_names(&self) -> Vec<char> {
+        match &self {
+            Term::Var(c) => vec![*c],
+            Term::Abs(c, a) => vec![*c].into_iter()
+                .chain(a.get_all_var_names().into_iter()).collect(),
+            Term::App(a, b) => a.get_all_var_names().into_iter()
+                .chain(b.get_all_var_names().into_iter()).collect(),
+        }
+    }
+
+    fn next_unused_var_name(&self) -> char {
+        *(LETTERS.into_iter().skip_while(|c| self.get_all_var_names().contains(c)).next()
+            .expect("Too many letters used, this was a dumb idea anyway"))
+    }
+
+    fn replace_var_name(self, old_letter: char, new_letter: char) -> Self {
+        match self {
+            Term::Var(c) => match c == new_letter { 
+                true  => panic!("I thought we agreed not to use Greek letters"),
+                false => match c == old_letter {
+                    true  => Var(new_letter),
+                    false => Var(c),
+                }
+            },
+
+            Term::Abs(c, a) => match c == new_letter {
+                true  => panic!("I thought we agreed not to use Greek letters"),
+                false => match c == old_letter {
+                    true  => Abs(new_letter, Box::new(a.replace_var_name(old_letter, new_letter))),
+                    false => Abs(c, Box::new(a.replace_var_name(old_letter, new_letter))),
+                }
+            }
+
+            Term::App(a, b) => App(
+                Box::new(a.replace_var_name(old_letter, new_letter)), 
+                Box::new(b.replace_var_name(old_letter, new_letter))),
+        }
+    }
+
+
 }
 
 impl fmt::Display for Term {
