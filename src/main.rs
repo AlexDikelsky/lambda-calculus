@@ -5,24 +5,49 @@ use crate::Term::Abs;
 use crate::Term::App;
 
 fn main() {
-    let y = Abs(Box::new(|x| Var));
-    println!("{}", y.to_string());
+    let x = Abs('a', Box::new(Var('a')));
+    let y = Abs('b', Box::new(Var('b')));
+    let f = App(Box::new(x), Box::new(y));
+    println!("{}", f.naieve_rewrite());
+    println!("{}", App(Box::new(f.clone()), Box::new(f.clone())).naieve_rewrite());
 }
 
 enum Term {
-    Var,
-    Abs(Box<dyn Fn(Term) -> Term>),
-    App(Box<dyn Fn(Term) -> Term>, Box<dyn Fn(Term) -> Term>),
+    Var(char),
+    Abs(char, Box<Term>),
+    App(Box<Term>, Box<Term>),
 }
 
 impl Term {
-    pub fn to_string(&self) -> String {
+    pub fn naieve_rewrite(&self) -> String {
         match &self {
-            Term::Var       => "x".to_string(),
-            Term::Abs(a)    => "λ.".to_string() + a.to_string(),
-            Term::App(a, b) => "y y".to_string(),
+            Term::Var(c)      => format!("{}", c),
+            Term::Abs(c, a)   => format!("(λ{}.{})", c, a.naieve_rewrite()),
+            Term::App(a, b)   => format!("({} {})", a.naieve_rewrite(), b.naieve_rewrite()),
         }
     }
+    pub fn clone(&self) -> Self {
+        match &self {
+            Term::Var(c)      => Var(*c),
+            Term::Abs(c, a)   => Abs(*c, Box::new((*a).clone())),
+            Term::App(a, b)   => App(Box::new((*a).clone()), Box::new((*b).clone())),
+        }
+    }
+
+    //pub fn de_brujin(&self, index: usize) -> String {
+    //    match &self {
+    //        Term::Var(n)    => format!("{}", n),
+    //        Term::Abs(a)    => format!("(λ.{})", a.de_brujin(index)),
+    //        Term::App(a, b) => format!("({} {})", a.de_brujin(index), b.de_brujin(index)),
+    //    }
+    //}
+    //pub fn single_var_to_string(&self) -> String {
+    //    match &self {
+    //        Term::Var(n)    => "x".to_string(),
+    //        Term::Abs(a)    => format!("(λ{}.{})", a.single_var_to_string(), a.single_var_to_string()),
+    //        Term::App(a, b) => format!("({} {})", a.single_var_to_string(), b.single_var_to_string()),
+    //    }
+    //}
 }
 
 
