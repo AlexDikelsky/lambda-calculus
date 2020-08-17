@@ -1,5 +1,7 @@
 #![allow(unused_imports)]
-mod test;
+mod test_lazy;
+mod test_strict;
+mod test_misc;
 mod terms;
 mod subsitutions;
 mod combinators;

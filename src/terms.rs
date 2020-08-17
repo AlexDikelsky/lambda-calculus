@@ -132,10 +132,22 @@ impl Term {
         }
     }
 
+    fn get_type(&self) -> String {
+        match &self {
+            Var(_) => "Var".to_string(),
+            Abs(_, _) => "Abs".to_string(),
+            App(_, _) => "App".to_string(),
+        }
+    }
 
     pub fn to_normal_form(self) -> Self {
-        println!("To normal form {}", &self);
-        match self {
+        println!("To normal form {}, self_type = {}, lower = {}", &self, self.get_type(),
+                 match &self {
+                     Var(_) => "Var".to_string(),
+                     App(a, b) => a.get_type() + &b.get_type(),
+                     Abs(a, b) => b.get_type(),
+                 });
+        let temp = match self {
             // Entire form is one variable
             Term::Var(_)    => self,
 
@@ -176,19 +188,19 @@ impl Term {
                     .strict_substitute(Substitution { 
                         to_replace: c1,
                         replace_with: Var(c2),
-                    }).to_normal_form(),
+                    }),
 
                 (Abs(c1, inner_abs1), Abs(c2, inner_abs2)) => Abs(c1, inner_abs1)
                     .strict_substitute(Substitution {
                         to_replace: c1,
                         replace_with: Abs(c2, inner_abs2),
-                    }).to_normal_form(),
+                    }),
 
                 (Abs(c1, inner_abs), App(a1, a2)) => Abs(c1, inner_abs)
                     .strict_substitute(Substitution {
                         to_replace: c1,
                         replace_with: App(a1, a2)
-                    }).to_normal_form(),
+                    }),
 
                 (App(a1, a2), Var(c2)) =>
                     App(Box::new(
@@ -219,55 +231,43 @@ impl Term {
                         ))),
                 
             },
-        }
+        };
+        println!("Now is {}", &temp);
+        temp
     }
 
 
     fn strict_substitute(self, sub: Substitution) -> Self {
-        println!("Substitg {} in {}", &sub, &self);
+        println!("Substitg {} in {}, type {}", &sub, &self, 
+                 match &self {
+                     Var(_) => "Var",
+                     App(_, _) => "App",
+                     Abs(_, _) => "Abs",
+                 });
         let saved_copy = match self {
             Term::Var(c) => match sub.to_replace == c {
                 true  => sub.replace_with,
                 false => Var(c),
             },
 
-            Term::App(a, b) => match *a {
-                //Done with first, but check next value
-                Term::Var(char_in_var) => App(
-                    Box::new(Var(char_in_var)), 
-                    Box::new(b.strict_substitute(sub))),
+            Term::App(a, b) => App(
+                Box::new(a.strict_substitute(sub.clone())),
+                Box::new(b.strict_substitute(sub)),
+                ),
 
-                //something like (λa.a)b, substitue b for the bounds var of a
-                // Need to put logic for fixing names here,
-                Term::Abs(inner_abs_var, abstration_term) => 
-                    match sub.replace_with.free_vars().contains(&inner_abs_var) {
+            Term::Abs(c, a) => match sub.replace_with.free_vars().contains(&c) {
 
-                        //Need to change inner vars, then keep substituting
-                        true => {
-                            let new_letter = abstration_term.next_unused_var_name();
-                            abstration_term.replace_var_name(inner_abs_var, new_letter)
-                                .strict_substitute(Substitution {
-                                    to_replace: new_letter,
-                                    replace_with: *b,
-                                })
-                        },
+                // Possible capture, use π untill I can fix this
+                true  => a.strict_substitute(Substitution {
+                    to_replace: c,
+                    replace_with: Var('π'),
+                }).strict_substitute(sub),
 
-                        //Don't need to change inner vars
-                        // Keep substituting
-                        false => abstration_term.strict_substitute(Substitution {
-                            to_replace: inner_abs_var,
-                            replace_with: *b,
-                        }),
-                    }
-
-                Term::App(x, y) => App(
-                    Box::new(x.strict_substitute(sub.clone())),
-                    Box::new(y.strict_substitute(sub))),
-            }
-
-            // Don't need to check for FV in sub.with
-            // Also keep evaluataing even if current letter = sub.for
-            Term::Abs(c, a) => a.strict_substitute(sub),
+                false => match c == sub.to_replace {
+                    true  => a.strict_substitute(sub),
+                    false => a.strict_substitute(sub),
+                }
+            },
 
         };
         println!("Result: {}", &saved_copy);

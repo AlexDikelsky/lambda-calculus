@@ -14,21 +14,6 @@ use crate::constants::var_x;
 use crate::constants::var_y;
 use crate::constants::var_z;
 
-#[test]
-fn test_free_vars() {
-    let x = Abs('a', Box::new(Var('a')));
-    let y = Abs('b', Box::new(Var('b')));
-    let f = App(Box::new(x.clone()), Box::new(y.clone()));
-    assert!(f.clone().free_vars() == vec![]);
-
-    let z = Abs('c', Box::new(App(Box::new(x.clone()), Box::new(Var('e')))));
-    assert!(z.clone().free_vars() == vec!['e']);
-
-    let a = App(Box::new(Var('a')), Box::new(Var('b')));
-    assert!(a.free_vars() == vec!['a', 'b']);
-
-
-}
 
 #[test]
 fn test_simple_subs() {
@@ -184,12 +169,13 @@ fn apply(a: Term, b: Term) -> Box<Term> {
     Box::new(App(Box::new(a), Box::new(b)))
 }
 
-#[test]
-fn test_and() {
-    //dbg!(and().strict_apply(*fls()).strict_apply(*fls()));
-    let flsfls = apply(*apply(*and(), *fls()), *fls());
-    dbg!(&flsfls);
-    assert!(flsfls == fls());
-}
-
-
+//#[test]
+//fn test_and() {
+//    //dbg!(and().strict_apply(*fls()).strict_apply(*fls()));
+//    let flsfls = apply(*apply(*and(), *fls()), *fls());
+//    let norm = flsfls.to_normal_form();
+//    dbg!(&norm);
+//    assert!(norm == *fls());
+//}
+//
+//
