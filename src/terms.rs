@@ -5,6 +5,7 @@ use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::subsitutions::Substitution;
 use crate::letter_list::LETTERS;
+use crate::constants::var_x;
 
 #[derive(PartialEq)]
 pub enum Term {
@@ -18,7 +19,7 @@ impl Term {
     pub fn print(&self) -> String {
         match &self {
             Term::Var(c)      => format!("{}", c),
-            Term::Abs(c, a)   => format!("(λ{}.{})", c, a.print()),
+            Term::Abs(c, a)   => format!("[λ{}.{}]", c, a.print()),
             Term::App(a, b)   => format!("({} {})", a.print(), b.print()),
         }
     }
@@ -33,7 +34,7 @@ impl Term {
             Term::App(_, _)   => App(Box::new(self), Box::new(replace_with)),
 
             // Keep applying
-            Term::Abs(c, a)   => a.substitue(Substitution { to_replace: c, replace_with: Box::new(replace_with) }),
+            Term::Abs(c, a)   => a.substitue(Substitution { to_replace: c, replace_with: replace_with }),
         }
     }
 
@@ -60,7 +61,7 @@ impl Term {
         println!("Substitg {} in {}", &sub, &self);
 
         let x = match self {
-            Term::Var(c)      => if c == sub.to_replace { *sub.replace_with } else { Var(c) },
+            Term::Var(c)      => if c == sub.to_replace { sub.replace_with } else { Var(c) },
 
             Term::Abs(c, a)   => {
                 match sub.to_replace == c {
@@ -102,7 +103,7 @@ impl Term {
     }
 
     fn next_unused_var_name(&self) -> char {
-        *(LETTERS.into_iter().skip_while(|c| self.get_all_var_names().contains(c)).next()
+        *(LETTERS.iter().skip_while(|c| self.get_all_var_names().contains(c)).next()
             .expect("Too many letters used, this was a dumb idea anyway"))
     }
 
@@ -132,17 +133,92 @@ impl Term {
     }
 
 
-    pub fn strict_apply(self, replace_with: Term) -> Self {
-        println!("Evaluing {}{}", &self, &replace_with);
+    pub fn to_normal_form(self) -> Self {
+        println!("To normal form {}", &self);
         match self {
+            // Entire form is one variable
             Term::Var(_)    => self,
-            Term::Abs(c, a) => a.strict_substitute(Substitution {
-                to_replace: c,
-                replace_with: Box::new(replace_with)
-            }),
-            Term::App(a, b) => App(
-                Box::new(a.strict_apply(replace_with.clone())),
-                Box::new(b.strict_apply(replace_with)))
+
+
+            // case where lambda but not applied to anything,
+            //  Keep β reducing, but don't need to use this abstraction
+            Term::Abs(_, a) => a.to_normal_form(),
+
+
+            //    Application
+            // Var, Var => normal form, return self
+            // Var, Abs => normal form, return self
+            // Var, App => Keep looking in App
+            //
+            // Abs, Var => Substitute Var -> Abs(c)
+            // Abs, Abs => Substitute Abs2 -> Abs1(c)
+            // Abs, App => Substitute App -> Abs(c)
+            //
+            // App, Var => Keep looking in App
+            // App, Abs => Keep looking in both
+            // App, App => Keep looking in both
+            Term::App(a, b) => match (*a, *b) {
+                (Var(c1), Var(c2)) => App(Box::new(Var(c1)), 
+                                          Box::new(Var(c2))),
+                (Var(c1), Abs(abs_c, abs_term)) =>
+                    App(Box::new(Var(c1)),
+                        Box::new(Abs(abs_c, abs_term))),
+
+                (Var(c1), App(a1, a2)) =>
+                    App(Box::new(Var(c1)),
+                        Box::new(App(Box::new(a1.to_normal_form()),
+                                     Box::new(a2.to_normal_form())))),
+
+
+                //All of these are some variation on substitute with the second term
+                // I think with an inner match this could be simplified
+                (Abs(c1, inner_abs), Var(c2)) => Abs(c1, inner_abs) // abstraction term
+                    .strict_substitute(Substitution { 
+                        to_replace: c1,
+                        replace_with: Var(c2),
+                    }).to_normal_form(),
+
+                (Abs(c1, inner_abs1), Abs(c2, inner_abs2)) => Abs(c1, inner_abs1)
+                    .strict_substitute(Substitution {
+                        to_replace: c1,
+                        replace_with: Abs(c2, inner_abs2),
+                    }).to_normal_form(),
+
+                (Abs(c1, inner_abs), App(a1, a2)) => Abs(c1, inner_abs)
+                    .strict_substitute(Substitution {
+                        to_replace: c1,
+                        replace_with: App(a1, a2)
+                    }).to_normal_form(),
+
+                (App(a1, a2), Var(c2)) =>
+                    App(Box::new(
+                        App(
+                            Box::new(a1.to_normal_form()),
+                            Box::new(a2.to_normal_form())
+                        )), 
+                        Box::new(Var(c2))),
+
+                (App(a1, a2), Abs(c2, abs2)) =>
+                    App(Box::new(
+                        App(
+                            Box::new(a1.to_normal_form()),
+                            Box::new(a2.to_normal_form())
+                        )), 
+                        Box::new(
+                            Abs(c2, abs2))),
+
+                (App(a1, a2), App(b1, b2)) =>
+                    App(
+                        Box::new(App(
+                            Box::new(a1.to_normal_form()),
+                            Box::new(a2.to_normal_form())
+                        )), 
+                        Box::new(App(
+                            Box::new(b1.to_normal_form()),
+                            Box::new(b2.to_normal_form())
+                        ))),
+                
+            },
         }
     }
 
@@ -151,7 +227,7 @@ impl Term {
         println!("Substitg {} in {}", &sub, &self);
         let saved_copy = match self {
             Term::Var(c) => match sub.to_replace == c {
-                true  => *sub.replace_with,
+                true  => sub.replace_with,
                 false => Var(c),
             },
 
@@ -172,7 +248,7 @@ impl Term {
                             abstration_term.replace_var_name(inner_abs_var, new_letter)
                                 .strict_substitute(Substitution {
                                     to_replace: new_letter,
-                                    replace_with: b,
+                                    replace_with: *b,
                                 })
                         },
 
@@ -180,7 +256,7 @@ impl Term {
                         // Keep substituting
                         false => abstration_term.strict_substitute(Substitution {
                             to_replace: inner_abs_var,
-                            replace_with: b,
+                            replace_with: *b,
                         }),
                     }
 

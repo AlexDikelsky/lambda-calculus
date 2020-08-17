@@ -1,5 +1,6 @@
 #![allow(unused_imports)]
 use crate::terms::Term::Var;
+use crate::terms::Term;
 use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::subsitutions::Substitution;
@@ -146,7 +147,7 @@ fn substitution_test() {
     let complete = apply_to.substitue(
         Substitution {
             to_replace: 'x',
-            replace_with: Box::new(arg),
+            replace_with: arg,
         });
 
     let rhs = Abs('y', Box::new(Abs('z', 
@@ -168,7 +169,7 @@ fn capture_book() {
     let applied = apply_to.substitue(
         Substitution {
             to_replace: 'x',
-            replace_with: var_z(),
+            replace_with: *var_z(),
         });
 
     // make sure it's not the identity function, because
@@ -179,11 +180,16 @@ fn capture_book() {
     assert!(&applied != &rhs);
 }
 
+fn apply(a: Term, b: Term) -> Box<Term> {
+    Box::new(App(Box::new(a), Box::new(b)))
+}
 
 #[test]
 fn test_and() {
-    dbg!(and().strict_apply(*fls()).strict_apply(*fls()));
-    assert!(false);
+    //dbg!(and().strict_apply(*fls()).strict_apply(*fls()));
+    let flsfls = apply(*apply(*and(), *fls()), *fls());
+    dbg!(&flsfls);
+    assert!(flsfls == fls());
 }
 
 
