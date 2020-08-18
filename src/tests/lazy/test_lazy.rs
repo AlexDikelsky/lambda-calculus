@@ -4,6 +4,7 @@ use crate::terms::Term;
 use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::subsitutions::Substitution;
+use crate::combinators::id;
 use crate::combinators::tru;
 use crate::combinators::fls;
 use crate::combinators::and;
@@ -44,6 +45,17 @@ fn test_simple_subs() {
     assert!(tru_test_2 == Var('b'));
 
 }
+
+#[test]
+fn both_false() {
+    // (λa.(λx.x)c))((λa.(λx.x)c)
+    // c
+    let part = abstraction('a', apply(id(), Var('c')));
+    let x = apply(part.clone(), part).to_normal_form();
+
+    assert!(x == Var('c'));
+}
+
 
 #[test]
 fn test_simple_name_colision() {
@@ -136,6 +148,7 @@ fn substitution_test() {
         Substitution {
             to_replace: 'x',
             replace_with: arg,
+            debug: true
         });
 
     let rhs = abstraction('y', abstraction('z', 
@@ -158,6 +171,7 @@ fn capture_book() {
         Substitution {
             to_replace: 'x',
             replace_with: Var('z'),
+            debug: true
         });
 
     // make sure it's not the identity function, because

@@ -155,7 +155,6 @@ fn e() {
                     apply(
                         Var('u'), Var('y')),
                     Var('x'))));
-    dbg!(&x);
     let y = x.to_normal_form();
     let real = 
         abstraction(
@@ -168,6 +167,7 @@ fn e() {
                     Var('x')),
                 Var('α')));
 
+    dbg!(&y);
     dbg!(&real);
     assert!(real == y);
 }
@@ -191,30 +191,42 @@ fn f() {
                             Var('y'),
                             Var('z'),
                         )))));
-    assert!(a.clone().to_normal_form() == a.clone());
 
     dbg!("(λx.λy.yx)u");
     let b =
         apply(K(),
-            Var('u'));
-    dbg!(&b);
+            Var('u')).to_normal_form();
 
-    assert!(b.is_normal_form() == false);
+    dbg!(&b);
+    println!("***FINISHED B***");
+    assert!(b == abstraction('y', apply(Var('y'), Var('u'))));
 
     let c =
         apply(
             K(),
-            Var('x'));
+            Var('x')).to_normal_form();
+
+    dbg!(&c);
+    println!("***FINISHED C***");
+    assert!(c == abstraction('y', apply(Var('y'), Var('x'))));
 
     let d = Var('w');
+    println!("***FINISHED D***");
 
     let combined =
-        apply(apply(apply(a, b), c), d);
+        apply(apply(apply(a, b), c), d).to_normal_form();
+    //let ab = apply(a, b).to_normal_form();
+    //dbg!(&ab);
+
+    //println!("***Applied B to A***");
+
 
     let real =
-        abstraction('z', apply(apply(apply(Var('z'), Var('y')), Var('x')), Var('z')));
+        apply(apply(Var('w'), Var('u')), 
+              apply(Var('w'), Var('v')));
 
-    assert!(combined.to_normal_form() == real);
+    dbg!(&combined, &real);
+    assert!(combined == real);
 
 }
 

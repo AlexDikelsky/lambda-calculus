@@ -8,7 +8,6 @@ use crate::letter_list::LETTERS;
 use crate::aux::apply;
 use crate::aux::abstraction;
 
-#[derive(PartialEq)]
 pub enum Term {
     Var(char),
     Abs(char, Box<Term>),
@@ -35,7 +34,7 @@ impl Term {
             App(_, _)   => apply(self, replace_with),
 
             // Keep applying
-            Abs(c, a)   => a.substitue(Substitution { to_replace: c, replace_with: replace_with }),
+            Abs(c, a)   => a.substitue(Substitution { to_replace: c, replace_with: replace_with, debug: true }),
         }
     }
 
@@ -196,32 +195,51 @@ impl Term {
                         Abs(c, inner_abs) => inner_abs.strict_substitute(Substitution {
                             to_replace: c,
                             replace_with: *b,
-                        }),
+                            debug: true,
+                        }).to_normal_form(),
 
-                        // Otherwise, return same thing
-                        Var(_) => App(a, b),
-                        App(_, _) => App(a, b),
+                        // Otherwise, return same thing because both are normal
+                        _ => { 
+                            //assert!(a.clone().to_normal_form() == *a, "math failed");
+                            //assert!(b.clone().to_normal_form() == *b, "math failed");
+                            //let p = apply(a.clone(), b.clone());
+                            //assert!(p.clone().to_normal_form() == p, "math failed");
+                            App(a, b)
+                        },
                     }
                 }
-                (true,  false) => App(a, Box::new(b.to_normal_form())),
-                (false, true ) => match *a {
-                    //Glitch
-                    Var(_) => panic!("Variable {} not recognized as normal", a),
 
+                // First one might be an abstraction
+                (true,  false) => match *a {
+                    // Replace the term in the abstraction with b
+                    Abs(c, inner_abs) => inner_abs.strict_substitute(Substitution {
+                        to_replace: c,
+                        replace_with: b.to_normal_form(),
+                        debug: true,
+                    }),
+                    _ => apply(*a, b.to_normal_form())
+                },
+                (false, true ) => match *a {
                     //Substitute b for a's bound
                     //   Use B as the abstraction to replace for c
                     Abs(c, inner_abs) => inner_abs.strict_substitute(Substitution {
                         to_replace: c,
-                        replace_with: *b
+                        replace_with: *b,
+                        debug: true,
                     }),
 
-                    //second norm may be bad
-                    App(_, _) => apply(a.to_normal_form(), *b).to_normal_form(), 
+                    // First thing could become an abstraction, so you need to
+                    // keep checking
+                    App(_, _) => apply(a.to_normal_form(), *b).to_normal_form(),
+                    Var(_) => panic!("Var treated as non-normal"),
                 },
-                (false, false) => apply(a.to_normal_form(), b.to_normal_form()),
+
+                // Can't say much here, but need to normalize the result because of cases like
+                //    (λa.(λx.x)c))((λa.(λx.x)c)
+                (false, false) => apply(a.to_normal_form(), b.to_normal_form()).to_normal_form(),
             }
         };
-        //println!("Now is {}, self_type = {}, lower = {}", &temp, dbg_strings.0, dbg_strings.1);
+        println!("Now is {}, self_type = {}, lower = {}", &temp, dbg_strings.0, dbg_strings.1);
         //println!("Now is {}", &temp);
         temp
     }
@@ -233,37 +251,42 @@ impl Term {
                      App(_, _) => "App",
                      Abs(_, _) => "Abs",
         };
-        //println!("Substitg {} in {}, type {}", &sub, &self, dbg_str);
-        println!("Substitg {} in {}", &sub, &self);
+        let s = sub.debug;
+        if s {
+            println!("Substitg {} in {}, type {}", &sub, &self, dbg_str);
+            //println!("Substitg {} in {}", &sub, &self);
+        }
         let saved_copy = match self {
-            Term::Var(c) => match sub.to_replace == c {
+            Var(c) => match sub.to_replace == c {
                 true  => sub.replace_with,
                 false => Var(c),
             },
 
-            Term::App(a, b) => App(
-                Box::new(a.strict_substitute(sub.clone())),
-                Box::new(b.strict_substitute(sub)),
-                ).to_normal_form(),
+            App(a, b) => apply(
+                a.strict_substitute(sub.clone()),
+                b.strict_substitute(sub),
+                ),
 
-            Term::Abs(c, a) => match sub.replace_with.free_vars().contains(&c) {
+            Abs(c, a) => match sub.replace_with.free_vars().contains(&c) {
 
                 // Var would be captured
                 true  => {
+                    // This works by swapping the bounds of the current abstraction
+                    // to a new value, then continuing the substitution as normal
                     let new_letter = a.next_unused_var_name();
-                    //println!("Swapping bound var {} with {}", c, new_letter);
-                    a.strict_substitute(Substitution {
-                        to_replace: c,
-                        replace_with: Var(new_letter),
-                    }).strict_substitute(Substitution {
-                        to_replace: new_letter,
-                        replace_with: sub.replace_with
-                    })
+                    println!("Swapping bound var {} with {}", c, new_letter);
+                    abstraction(
+                        new_letter, 
+                        a.strict_substitute(Substitution {
+                            to_replace: c,
+                            replace_with: Var(new_letter),
+                            debug: sub.debug,
+                        }).strict_substitute(sub))
                 },
 
                 false => match c == sub.to_replace {
                     // Stop substituting because tighter binding scope
-                    //  Still need to normalize
+                    //  Still need to normalize, but not here
                     true  => abstraction(c, *a),
 
                     // Some other variable, so still in scope and
@@ -273,24 +296,46 @@ impl Term {
             },
 
         };
-        //println!("Result: {}, type was {}", &saved_copy, dbg_str);
+        if s {
+            println!("Result: {}, type was {}", &saved_copy, dbg_str)
+        };
+
         saved_copy
     }
         
+    fn to_reg_names(self) -> Self {
+        match self {
+            Var(_) => Var(self.next_unused_var_name()),
+            Abs(c, a) => {
+                let new_letter = a.next_unused_var_name();
+                abstraction(new_letter, a.strict_substitute(Substitution {
+                    to_replace: c,
+                    replace_with: Var(new_letter),
+                    debug: false,
+                }))
+            },
+            App(a, b) => apply(a.to_reg_names(), b.to_reg_names()),
+        }
+    }
 
-
-
-                    
-
-
+    pub fn equal_names_matter(self, other: Term) -> bool {
+        match (self, other) {
+            (Var(c1), Var(c2)) => c1 == c2,
+            (Abs(c1, a1), Abs(c2, a2)) => (c1 == c2) && (a1.equal_names_matter(*a2)),
+            (App(a1, b1) , App(a2, b2)) => a1.equal_names_matter(*a2) && b1.equal_names_matter(*b2),
+            _ => false,
+        }
+    }
 
 }
 
-//impl PartialEq for Term {
-//    fn eq(&self, other: &Self) -> bool {
-//
-//    }
-//}
+impl PartialEq for Term {
+    fn eq(&self, other: &Self) -> bool {
+        //This could be much faster and memory intensive if you don't clone
+        self.clone().to_reg_names().equal_names_matter(other.clone().to_reg_names())
+
+    }
+}
 
 impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

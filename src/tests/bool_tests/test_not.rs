@@ -14,12 +14,15 @@ use crate::aux::abstraction;
 
 #[test]
 fn not_tru() {
-    assert!(
-        apply(not(), tru()).to_normal_form() == fls());
+    let a = apply(not(), tru()).to_normal_form();
+    dbg!(&a);
+    assert!(a == fls());
+        
 }
 
 #[test]
 fn not_fls() {
+    let a = apply(not(), fls()).to_normal_form();
     assert!(
-        apply(not(), fls()).to_normal_form() == tru());
+        a == tru());
 }

@@ -46,7 +46,19 @@ pub fn or() -> Term {
 // λx. fls tru
 pub fn not() -> Term {
     abstraction('x',
-        apply(fls(), tru()))
+        apply(apply(Var('x'), fls()), tru()))
+}
+
+// λa.λb. or (and a b) (not (and a b))
+pub fn xor() -> Term {
+    let aandb = apply(apply(and(), Var('a')), Var('b'));
+    
+    abstraction('a',
+        abstraction('b',
+            apply(apply(or(), 
+                        aandb.clone()), 
+                  apply(not(), aandb))))
+
 }
 
 // Switch first and second arg

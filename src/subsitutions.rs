@@ -4,13 +4,16 @@ use crate::terms::Term;
 pub struct Substitution {
     pub to_replace: char,
     pub replace_with: Term,
+    pub debug: bool,
 }
 
 impl Substitution {
     pub fn clone(&self) -> Self {
         Substitution { 
             to_replace: self.to_replace,
-            replace_with: self.replace_with.clone() }
+            replace_with: self.replace_with.clone(),
+            debug: self.debug,
+        }
     }
 }
 
