@@ -39,3 +39,6 @@ pub fn var_y() -> Box<Term> {
 pub fn var_z() -> Box<Term> {
     gen('z')
 }
+pub fn var_alpha() -> Box<Term> {
+    gen('α')
+}

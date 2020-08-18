@@ -57,4 +57,14 @@ fn is_abs_var_norm() {
             == false);
 }
 
-
+#[test]
+fn b_normal() {
+    let x = 
+      *apply(
+        *abstraction(
+            'x', *apply(*var_x(), *var_y())),
+        *abstraction(
+            'u', *apply(*apply(*var_v(), *var_u()), *var_u())),
+    );
+    assert!(x.is_normal_form() == false);
+}

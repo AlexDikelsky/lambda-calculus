@@ -152,7 +152,6 @@ impl Term {
     }
 
 
-
     pub fn to_normal_form(self) -> Self {
         let dbg_strings = (self.get_type(), match &self {
                      Var(_) => "Var".to_string(),
@@ -185,74 +184,105 @@ impl Term {
             // App, Var => Keep looking in App
             // App, Abs => Keep looking in both
             // App, App => Keep looking in both
-            Term::App(a, b) => match (*a, *b) {
-                (Var(c1), Var(c2)) => App(Box::new(Var(c1)), 
-                                          Box::new(Var(c2))),
-                (Var(c1), Abs(abs_c, abs_term)) =>
-                    App(Box::new(Var(c1)),
-                        Box::new(Abs(abs_c, abs_term))),
 
-                (Var(c1), App(a1, a2)) =>
-                    App(Box::new(Var(c1)),
-                        Box::new(App(Box::new(a1.to_normal_form()),
-                                     Box::new(a2.to_normal_form())))),
+            Term::App(a, b) => match (a.is_normal_form(), b.is_normal_form()) {
+                (true,  true ) => {
+                    match *a {
+                        // If the first term is an abstraction, then it can be reduced again
+                        Abs(c, a1) => Abs(c, a1).strict_substitute(Substitution {
+                            to_replace: c,
+                            replace_with: *b,
+                        }),
 
+                        // Otherwise, return same thing
+                        Var(_) => App(a, b),
+                        App(_, _) => App(a, b),
+                    }
+                }
+                (true,  false) => App(a, Box::new(b.to_normal_form())),
+                (false, true ) => match *a {
+                    //Glitch
+                    Var(_) => panic!("Variable {} not recognized as normal", a),
 
-                //All of these are some variation on substitute with the second term
-                // I think with an inner match this could be simplified
-                (Abs(c1, inner_abs), Var(c2)) => Abs(c1, inner_abs) // abstraction term
-                    .strict_substitute(Substitution { 
-                        to_replace: c1,
-                        replace_with: Var(c2),
+                    //Substitute b for a's bound
+                    Abs(c, a1) => Abs(c, a1).strict_substitute(Substitution {
+                        to_replace: c,
+                        replace_with: *b
                     }),
 
-                (Abs(c1, inner_abs1), Abs(c2, inner_abs2)) => Abs(c1, inner_abs1)
-                    .strict_substitute(Substitution {
-                        to_replace: c1,
-                        replace_with: Abs(c2, inner_abs2),
-                    }),
+                    App(_, _) => a.to_normal_form(),
+                },
+                (false, false) => App(Box::new(a.to_normal_form()), 
+                                      Box::new(b.to_normal_form())),
+            }
+            //Term::App(a, b) => match (*a, *b) {
+            //    (Var(c1), Var(c2)) => App(Box::new(Var(c1)), 
+            //                              Box::new(Var(c2))),
+            //    (Var(c1), Abs(abs_c, abs_term)) =>
+            //        App(Box::new(Var(c1)),
+            //            Box::new(Abs(abs_c, abs_term))),
 
-                (Abs(c1, inner_abs), App(a1, a2)) => Abs(c1, inner_abs)
-                    .strict_substitute(Substitution {
-                        to_replace: c1,
-                        replace_with: App(a1, a2)
-                    }),
+            //    (Var(c1), App(a1, a2)) =>
+            //        App(Box::new(Var(c1)),
+            //            Box::new(App(Box::new(a1.to_normal_form()),
+            //                         Box::new(a2.to_normal_form())))),
 
-                (App(a1, a2), Var(c2)) =>
-                    App(Box::new(
-                        App(
-                            a1,
-                            a2
-                        )),
-                        Box::new(Var(c2))).to_normal_form(),
-                    //App(Box::new(
-                    //    App(
-                    //        Box::new(a1.to_normal_form()),
-                    //        Box::new(a2.to_normal_form())
-                    //    ).to_normal_form()), 
-                    //    Box::new(Var(c2))),
 
-                (App(a1, a2), Abs(c2, abs2)) =>
-                    App(Box::new(
-                        App(
-                            Box::new(a1.to_normal_form()),
-                            Box::new(a2.to_normal_form())
-                        )), 
-                        Box::new(
-                            Abs(c2, abs2))),
+            //    //All of these are some variation on substitute with the second term
+            //    // I think with an inner match this could be simplified
+            //    (Abs(c1, inner_abs), Var(c2)) => Abs(c1, inner_abs) // abstraction term
+            //        .strict_substitute(Substitution { 
+            //            to_replace: c1,
+            //            replace_with: Var(c2),
+            //        }),
 
-                (App(a1, a2), App(b1, b2)) =>
-                    App(
-                        Box::new(App(
-                            Box::new(a1.to_normal_form()),
-                            Box::new(a2.to_normal_form())
-                        )), 
-                        Box::new(App(
-                            Box::new(b1.to_normal_form()),
-                            Box::new(b2.to_normal_form())
-                        ))),
-                
-            },
+            //    (Abs(c1, inner_abs1), Abs(c2, inner_abs2)) => Abs(c1, inner_abs1)
+            //        .strict_substitute(Substitution {
+            //            to_replace: c1,
+            //            replace_with: Abs(c2, inner_abs2),
+            //        }),
+
+            //    (Abs(c1, inner_abs), App(a1, a2)) => Abs(c1, inner_abs)
+            //        .strict_substitute(Substitution {
+            //            to_replace: c1,
+            //            replace_with: App(a1, a2)
+            //        }),
+
+            //    (App(a1, a2), Var(c2)) =>
+            //        App(Box::new(
+            //            App(
+            //                a1,
+            //                a2
+            //            )),
+            //            Box::new(Var(c2))).to_normal_form(),
+            //        //App(Box::new(
+            //        //    App(
+            //        //        Box::new(a1.to_normal_form()),
+            //        //        Box::new(a2.to_normal_form())
+            //        //    ).to_normal_form()), 
+            //        //    Box::new(Var(c2))),
+
+            //    (App(a1, a2), Abs(c2, abs2)) =>
+            //        App(Box::new(
+            //            App(
+            //                Box::new(a1.to_normal_form()),
+            //                Box::new(a2.to_normal_form())
+            //            )), 
+            //            Box::new(
+            //                Abs(c2, abs2))),
+
+            //    (App(a1, a2), App(b1, b2)) =>
+            //        App(
+            //            Box::new(App(
+            //                Box::new(a1.to_normal_form()),
+            //                Box::new(a2.to_normal_form())
+            //            )), 
+            //            Box::new(App(
+            //                Box::new(b1.to_normal_form()),
+            //                Box::new(b2.to_normal_form())
+            //            ))),
+            //    
+            //},
         };
         println!("Now is {}, self_type = {}, lower = {}", &temp, dbg_strings.0, dbg_strings.1);
         temp

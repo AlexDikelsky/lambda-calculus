@@ -16,6 +16,7 @@ use crate::constants::var_w;
 use crate::constants::var_x;
 use crate::constants::var_y;
 use crate::constants::var_z;
+use crate::constants::var_alpha;
 
 
 #[test]
@@ -124,16 +125,141 @@ fn b() {
     let y = x.to_normal_form();
     let real = *apply(*var_v(), *var_u());
     assert!(real == y);
-    assert!(false);
+}
+
+#[test]
+fn c() {
+    println!("(λx.x(x(yz))x)(λu.uv)");
+    println!("yzvv(λu.uv)");
+
+    let x =
+        *apply(
+            *abstraction(
+                'x',
+                *apply(
+                    *apply(
+                        *var_x(),
+                        *apply(
+                            *var_x(),
+                            *apply(
+                                *var_y(),
+                                *var_z(),
+                            )
+                        )
+                    ),
+                    *var_x()
+                )
+            ),
+            *abstraction(
+                'u',
+                *apply(
+                    *var_u(),
+                    *var_v(),
+                )
+            )
+        );
+    let real = 
+        *apply(
+            *apply(
+                *apply(
+                    *apply(
+                        *var_y(),
+                        *var_z(),
+                    ),
+                    *var_v(),
+                ),
+                *var_v(),
+            ),
+            *abstraction(
+                'u',
+                *apply(
+                    *var_u(),
+                    *var_v(),
+                )
+            )
+        );
+    dbg!(&x);
+    dbg!(&real);
+    let y = x.to_normal_form();
+    assert!(y == real);
+}
+
+
+
+#[test]
+fn d() {
+    println!("(λx.xxy)(λy.yz)");
+    println!("zzy");
+    let x = 
+        *apply(
+            *abstraction(
+                'x',
+                *apply(
+                    *apply(*var_x(), *var_x()),
+                    *var_y()
+                )
+            ),
+            *abstraction(
+                'y',
+                *apply(*var_y(), *var_z())
+            ),
+        );
+
+    let y = x.to_normal_form();
+    let real = *apply(
+        *apply(*var_z(), *var_z()),
+        *var_y());
+
+    assert!(y == real);
+}
+
+#[test]
+fn e() {
+    println!("(λx.λy.xyy)(λu.uyx)");
+    println!("(λα.αyxα)");
+    let x =
+        *apply(
+            *abstraction(
+                'x',
+                *abstraction(
+                    'y',
+                    *apply(
+                        *apply(
+                            *var_x(),
+                            *var_y()),
+                        *var_y()),
+            )),
+            *abstraction(
+                'u',
+                *apply(
+                    *apply(
+                        *var_u(), *var_y()),
+                    *var_x())));
+    dbg!(&x);
+    let y = x.to_normal_form();
+    let real = 
+        *abstraction(
+            'α',
+            *apply(
+                *apply(
+                    *apply(
+                        *var_alpha(),
+                        *var_y()),
+                    *var_x()),
+                *var_alpha()));
+
+    dbg!(&real);
+    assert!(real == y);
 }
 
 
 
 
-//#[test]
-//fn test_and() {
-//    let flsfls = apply(*apply(*and(), *fls()), *fls());
-//    let norm = flsfls.to_normal_form();
-//    dbg!(&norm);
-//    assert!(norm == *fls());
-//}
+
+#[test]
+fn test_and() {
+    let flsfls = apply(*apply(*and(), *fls()), *fls());
+    let norm = flsfls.to_normal_form();
+    dbg!(&norm);
+    assert!(norm == *fls());
+}
