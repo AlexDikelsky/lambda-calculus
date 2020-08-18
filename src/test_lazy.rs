@@ -7,12 +7,8 @@ use crate::subsitutions::Substitution;
 use crate::combinators::tru;
 use crate::combinators::fls;
 use crate::combinators::and;
-use crate::constants::var_a;
-use crate::constants::var_b;
-use crate::constants::var_w;
-use crate::constants::var_x;
-use crate::constants::var_y;
-use crate::constants::var_z;
+use crate::aux::apply;
+use crate::aux::abstraction;
 
 
 #[test]
@@ -24,7 +20,7 @@ fn test_simple_subs() {
 
 
     // (λa.a)b
-    let simple_sub = ident_a.clone().apply_abs(*var_b());
+    let simple_sub = ident_a.clone().apply_abs(Var('b'));
     assert!(simple_sub == Var('b'));
 
     // (λa.a)(λb.b)
@@ -40,12 +36,12 @@ fn test_simple_subs() {
     assert!(free_trivial == free_var.clone());
 
     // (λa.λb.a)(a)(b)
-    let tru_test = tru().apply_abs(*var_a()).apply_abs(*var_b());
-    assert!(tru_test == *var_a());
+    let tru_test = tru().apply_abs(Var('a')).apply_abs(Var('b'));
+    assert!(tru_test == Var('a'));
 
     // (λa.λb.a)(b)(a)
-    let tru_test_2 = tru().apply_abs(*var_b()).apply_abs(*var_a());
-    assert!(tru_test_2 == *var_b());
+    let tru_test_2 = tru().apply_abs(Var('b')).apply_abs(Var('a'));
+    assert!(tru_test_2 == Var('b'));
 
 }
 
@@ -55,42 +51,49 @@ fn test_simple_name_colision() {
     // (λx.λx.b)(b)(b)
     //     -> b
     let not_bad = 
-        Abs('x',
-            Box::new(Abs(
-                    'x', var_b())))
-        .apply_abs(*var_b())
-        .apply_abs(*var_b());
+        abstraction('x',
+            abstraction(
+                    'x', Var('b')))
+        .apply_abs(Var('b'))
+        .apply_abs(Var('b'));
     
-    assert!(not_bad == *var_b());
+    assert!(not_bad == Var('b'));
 
 
     // (λx.λx.b)(a)(a)
     //     -> b
     let bad_colision = 
-        Abs('x',
-            Box::new(Abs(
-                    'x', var_b())))
-        .apply_abs(*var_a())
-        .apply_abs(*var_a());
-    assert!(bad_colision.clone() == *var_b());
+        abstraction('x',
+            abstraction(
+                    'x', Var('b')))
+        .apply_abs(Var('a'))
+        .apply_abs(Var('a'));
+    assert!(bad_colision.clone() == Var('b'));
 
     // (λx.(λy.λz. x y)y)
     //      y is free and bound in different places
     //
     //    dbg -> (λx.((λy.(λz.(x y))) y))
     let y_bound_free = 
-        Abs('x', 
-            Box::new(App(Box::new(Abs('y', Box::new(Abs('z', Box::new(App(var_x(), var_y())))))), var_y())));
+        abstraction('x', 
+            apply(abstraction('y', 
+                              abstraction('z', apply(Var('x'), Var('y')))), 
+                  Var('y')));
 
     // (λx.(λy.λz. x y)y)(a)(b)
     // ((λy.λz. a y)y)(b)
     //   -> is a normal form
-    let lhs_y_free_1 = y_bound_free.clone().apply_abs(*var_a()).apply_abs(*var_b());
+    let lhs_y_free_1 = y_bound_free.clone().apply_abs(Var('a')).apply_abs(Var('b'));
 
     // ((λy.λz. a y)y)(b)
-    let rhs_y_free_1 = App(
-            Box::new(App(Box::new(Abs('y', Box::new(Abs('z', Box::new(App(var_a(), var_y())))))), var_y())), 
-            var_b());
+    let rhs_y_free_1 = apply(
+            apply(abstraction('y', 
+                              abstraction('z', 
+                                          apply(
+                                              Var('a'), 
+                                              Var('y')))),
+                  Var('y')), 
+            Var('b'));
 
     assert!(lhs_y_free_1 == rhs_y_free_1);
 
@@ -100,11 +103,11 @@ fn test_simple_name_colision() {
 fn mistaken_test_capture() {
     // λx.xy
     let failed_capture_init_x = 
-        Abs('x', Box::new(App(var_x(), var_y())));
+        abstraction('x', apply(Var('x'), Var('y')));
 
     // λy.xy
     let failed_capture_init_y = 
-        Abs('y', Box::new(App(var_x(), var_y())));
+        abstraction('y', apply(Var('x'), Var('y')));
 
     // (λx.xy)(λy.xy)
     //   -> 
@@ -112,9 +115,9 @@ fn mistaken_test_capture() {
     let failed_capture_x = 
         failed_capture_init_x.apply_abs(failed_capture_init_y);
 
-    let failed_test = App(
-                Box::new(Abs('y', Box::new(App(var_x(), var_y())))),
-                var_y());
+    let failed_test = apply(
+                abstraction('y', apply(Var('x'), Var('y'))),
+                Var('y'));
 
     assert!(&failed_test == &failed_capture_x);
 
@@ -124,10 +127,10 @@ fn mistaken_test_capture() {
 fn substitution_test() {
 
     // λy.x
-    let apply_to = Abs('y', var_x()) ;
+    let apply_to = abstraction('y', Var('x')) ;
     
     // λz.zw
-    let arg = Abs('z', Box::new(App(var_z(), var_w())));
+    let arg = abstraction('z', apply(Var('z'), Var('w')));
 
     let complete = apply_to.substitue(
         Substitution {
@@ -135,10 +138,10 @@ fn substitution_test() {
             replace_with: arg,
         });
 
-    let rhs = Abs('y', Box::new(Abs('z', 
-                                    Box::new(App(var_z(), 
-                                                 var_w()))
-                                    )));
+    let rhs = abstraction('y', abstraction('z', 
+                                    apply(Var('z'), 
+                                                 Var('w'))
+                                    ));
 
     dbg!(&complete, &rhs);
 
@@ -149,25 +152,22 @@ fn substitution_test() {
 fn capture_book() {
 
     // λz.x
-    let apply_to = Abs('z', var_x());
+    let apply_to = abstraction('z', Var('x'));
 
     let applied = apply_to.substitue(
         Substitution {
             to_replace: 'x',
-            replace_with: *var_z(),
+            replace_with: Var('z'),
         });
 
     // make sure it's not the identity function, because
     // that would mean that the previous function changed
     // λz.y to λz.z
-    let rhs = Abs('z', var_z());
+    let rhs = abstraction('z', Var('z'));
 
     assert!(&applied != &rhs);
 }
 
-fn apply(a: Term, b: Term) -> Box<Term> {
-    Box::new(App(Box::new(a), Box::new(b)))
-}
 
 //#[test]
 //fn test_and() {

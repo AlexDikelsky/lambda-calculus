@@ -8,22 +8,9 @@ use crate::combinators::id;
 use crate::combinators::tru;
 use crate::combinators::fls;
 use crate::combinators::and;
-use crate::constants::var_a;
-use crate::constants::var_b;
-use crate::constants::var_u;
-use crate::constants::var_v;
-use crate::constants::var_w;
-use crate::constants::var_x;
-use crate::constants::var_y;
-use crate::constants::var_z;
+use crate::aux::apply;
+use crate::aux::abstraction;
 
-fn apply(a: Term, b: Term) -> Box<Term> {
-    Box::new(App(Box::new(a), Box::new(b)))
-}
-
-fn abstraction(c: char, b: Term) -> Box<Term> {
-    Box::new(Abs(c, Box::new(b)))
-}
 
 #[test]
 fn is_id_norm() {
@@ -47,24 +34,24 @@ fn is_and_norm() {
 
 #[test]
 fn is_abs_abs_norm() {
-    assert!(apply(*id(), *id()).is_normal_form()
+    assert!(apply(id(), id()).is_normal_form()
             == false);
 }
 
 #[test]
 fn is_abs_var_norm() {
-    assert!(apply(*id(), *var_x()).is_normal_form()
+    assert!(apply(id(), Var('x')).is_normal_form()
             == false);
 }
 
 #[test]
 fn b_normal() {
     let x = 
-      *apply(
-        *abstraction(
-            'x', *apply(*var_x(), *var_y())),
-        *abstraction(
-            'u', *apply(*apply(*var_v(), *var_u()), *var_u())),
+      apply(
+        abstraction(
+            'x', apply(Var('x'), Var('y'))),
+        abstraction(
+            'u', apply(apply(Var('v'), Var('u')), Var('u'))),
     );
     assert!(x.is_normal_form() == false);
 }

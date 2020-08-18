@@ -5,7 +5,8 @@ use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::subsitutions::Substitution;
 use crate::letter_list::LETTERS;
-use crate::constants::var_x;
+use crate::aux::apply;
+use crate::aux::abstraction;
 
 #[derive(PartialEq)]
 pub enum Term {
@@ -18,9 +19,9 @@ pub enum Term {
 impl Term {
     pub fn print(&self) -> String {
         match &self {
-            Term::Var(c)      => format!("{}", c),
-            Term::Abs(c, a)   => format!("[λ{}.{}]", c, a.print()),
-            Term::App(a, b)   => format!("({} {})", a.print(), b.print()),
+            Var(c)      => format!("{}", c),
+            Abs(c, a)   => format!("[λ{}.{}]", c, a.print()),
+            App(a, b)   => format!("({} {})", a.print(), b.print()),
         }
     }
 
@@ -30,19 +31,19 @@ impl Term {
         match self {
 
             // Normal forms
-            Term::Var(c)      => self,
-            Term::App(_, _)   => App(Box::new(self), Box::new(replace_with)),
+            Var(c)      => self,
+            App(_, _)   => apply(self, replace_with),
 
             // Keep applying
-            Term::Abs(c, a)   => a.substitue(Substitution { to_replace: c, replace_with: replace_with }),
+            Abs(c, a)   => a.substitue(Substitution { to_replace: c, replace_with: replace_with }),
         }
     }
 
     pub fn clone(&self) -> Self {
         match &self {
-            Term::Var(c)      => Var(*c),
-            Term::Abs(c, a)   => Abs(*c, Box::new((*a).clone())),
-            Term::App(a, b)   => App(Box::new((*a).clone()), Box::new((*b).clone())),
+            Var(c)      => Var(*c),
+            Abs(c, a)   => abstraction(*c, (*a).clone()),
+            App(a, b)   => apply((*a).clone(), (*b).clone()),
         }
     }
 
@@ -50,9 +51,9 @@ impl Term {
     //and subtraction rather than filter
     pub fn free_vars(&self) -> Vec<char> {
         match &self {
-            Term::Var(c)      => vec![*c],
-            Term::Abs(c, a)   => a.free_vars().into_iter().filter(|x| *x != *c).collect(),
-            Term::App(a, b)   => a.free_vars().into_iter()
+            Var(c)      => vec![*c],
+            Abs(c, a)   => a.free_vars().into_iter().filter(|x| *x != *c).collect(),
+            App(a, b)   => a.free_vars().into_iter()
                 .chain(b.free_vars().into_iter()).collect(),
         }
     }
@@ -61,9 +62,9 @@ impl Term {
         println!("Substitg {} in {}", &sub, &self);
 
         let x = match self {
-            Term::Var(c)      => if c == sub.to_replace { sub.replace_with } else { Var(c) },
+            Var(c)      => if c == sub.to_replace { sub.replace_with } else { Var(c) },
 
-            Term::Abs(c, a)   => {
+            Abs(c, a)   => {
                 match sub.to_replace == c {
                     // Stop if [x -> s]λx.(anything) because overridden by scope
                     true => Abs(c, a),
@@ -94,10 +95,10 @@ impl Term {
 
     fn get_all_var_names(&self) -> Vec<char> {
         match &self {
-            Term::Var(c) => vec![*c],
-            Term::Abs(c, a) => vec![*c].into_iter()
+            Var(c) => vec![*c],
+            Abs(c, a) => vec![*c].into_iter()
                 .chain(a.get_all_var_names().into_iter()).collect(),
-            Term::App(a, b) => a.get_all_var_names().into_iter()
+            App(a, b) => a.get_all_var_names().into_iter()
                 .chain(b.get_all_var_names().into_iter()).collect(),
         }
     }
@@ -155,21 +156,22 @@ impl Term {
     pub fn to_normal_form(self) -> Self {
         let dbg_strings = (self.get_type(), match &self {
                      Var(_) => "Var".to_string(),
-                     App(a, b) => a.get_type() + &b.get_type(),
-                     Abs(a, b) => b.get_type(),
+                     App(a, b) => format!("{}, {}", a.is_normal_form(), &b.is_normal_form()),
+                     Abs(a, b) => format!("{}", b.is_normal_form()),
                  });
 
-        println!("To normal form {}, self_type = {}, lower = {}", &self, dbg_strings.0, dbg_strings.1);
+        //println!("To normal form {}, self = {}, lower = {}", &self, dbg_strings.0, dbg_strings.1);
+        println!("To normal {}", &self);
 
         let temp = match self {
             // Entire form is one variable
-            Term::Var(_)    => self,
+            Var(_)    => self,
 
 
             // case where lambda but not applied to anything,
             //  Keep β reducing, but don't need to use this abstraction
             //  Make sure to stay an abstraction though
-            Term::Abs(c, a) => Abs(c, Box::new(a.to_normal_form())),
+            Abs(c, a) => abstraction(c, a.to_normal_form()),
 
 
             //    Application
@@ -185,7 +187,7 @@ impl Term {
             // App, Abs => Keep looking in both
             // App, App => Keep looking in both
 
-            Term::App(a, b) => match (a.is_normal_form(), b.is_normal_form()) {
+            App(a, b) => match (a.is_normal_form(), b.is_normal_form()) {
                 (true,  true ) => {
                     match *a {
                         // If the first term is an abstraction, then it can be reduced again
@@ -210,10 +212,10 @@ impl Term {
                         replace_with: *b
                     }),
 
-                    App(_, _) => a.to_normal_form(),
+                    //second norm may be bad
+                    App(_, _) => apply(a.to_normal_form(), *b).to_normal_form(), 
                 },
-                (false, false) => App(Box::new(a.to_normal_form()), 
-                                      Box::new(b.to_normal_form())),
+                (false, false) => apply(a.to_normal_form(), b.to_normal_form()),
             }
             //Term::App(a, b) => match (*a, *b) {
             //    (Var(c1), Var(c2)) => App(Box::new(Var(c1)), 
@@ -284,7 +286,8 @@ impl Term {
             //    
             //},
         };
-        println!("Now is {}, self_type = {}, lower = {}", &temp, dbg_strings.0, dbg_strings.1);
+        //println!("Now is {}, self_type = {}, lower = {}", &temp, dbg_strings.0, dbg_strings.1);
+        //println!("Now is {}", &temp);
         temp
     }
 
@@ -295,7 +298,7 @@ impl Term {
                      App(_, _) => "App",
                      Abs(_, _) => "Abs",
         };
-        println!("Substitg {} in {}, type {}", &sub, &self, dbg_str);
+        //println!("Substitg {} in {}, type {}", &sub, &self, dbg_str);
         let saved_copy = match self {
             Term::Var(c) => match sub.to_replace == c {
                 true  => sub.replace_with,
@@ -310,10 +313,17 @@ impl Term {
             Term::Abs(c, a) => match sub.replace_with.free_vars().contains(&c) {
 
                 // Possible capture, use π untill I can fix this
-                true  => a.strict_substitute(Substitution {
-                    to_replace: c,
-                    replace_with: Var('π'),
-                }).strict_substitute(sub),
+                true  => {
+                    let new_letter = a.next_unused_var_name();
+                    //println!("Swapping bound var {} with {}", c, new_letter);
+                    a.strict_substitute(Substitution {
+                        to_replace: c,
+                        replace_with: Var(new_letter),
+                    }).strict_substitute(Substitution {
+                        to_replace: new_letter,
+                        replace_with: sub.replace_with
+                    })
+                },
 
                 false => match c == sub.to_replace {
                     // Stop substituting because tighter binding scope
@@ -327,7 +337,7 @@ impl Term {
             },
 
         };
-        println!("Result: {}, type was {}", &saved_copy, dbg_str);
+        //println!("Result: {}, type was {}", &saved_copy, dbg_str);
         saved_copy
     }
         

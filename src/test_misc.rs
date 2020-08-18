@@ -7,12 +7,6 @@ use crate::subsitutions::Substitution;
 use crate::combinators::tru;
 use crate::combinators::fls;
 use crate::combinators::and;
-use crate::constants::var_a;
-use crate::constants::var_b;
-use crate::constants::var_w;
-use crate::constants::var_x;
-use crate::constants::var_y;
-use crate::constants::var_z;
 
 #[test]
 fn test_free_vars() {
