@@ -2,6 +2,7 @@
 mod test_lazy;
 mod test_strict;
 mod test_misc;
+mod test_normal;
 mod terms;
 mod subsitutions;
 mod combinators;
@@ -17,12 +18,35 @@ use crate::combinators::and;
 use crate::combinators::fls;
 use crate::constants::var_a;
 use crate::constants::var_b;
+use crate::constants::var_u;
+use crate::constants::var_v;
+use crate::constants::var_w;
 use crate::constants::var_x;
 use crate::constants::var_y;
 use crate::constants::var_z;
 use crate::combinators::omega_parts;
 
+fn apply(a: Term, b: Term) -> Box<Term> {
+    Box::new(App(Box::new(a), Box::new(b)))
+}
+
+fn abstraction(c: char, b: Term) -> Box<Term> {
+    Box::new(Abs(c, Box::new(b)))
+}
+
 fn main() {
+    println!("Input: (λx.xy)(λu.vuu)");
+    println!("Expected out: ((vy)y)");
+    let x = 
+      *apply(
+        *abstraction(
+            'x', *apply(*var_x(), *var_y())),
+        *abstraction(
+            'u', *apply(*apply(*var_v(), *var_u()), *var_u())),
+    );
+    let y = x.to_normal_form();
+    let real = *apply(*apply(*var_v(), *var_y()), *var_y());
+
     //let id = Abs('x', Box::new(Var('x')));
     //let tru = Abs('y', Box::new(Abs('z', Box::new(Var('y')))));
     //let fls = Abs('a', Box::new(Abs('b', Box::new(Var('b')))));

@@ -140,13 +140,28 @@ impl Term {
         }
     }
 
+    pub fn is_normal_form(&self) -> bool {
+        match &self {
+            Var(_) => true,
+            Abs(_, a) => a.is_normal_form(),
+            App(a, b) => match **a {
+                Abs(_, _) => false,
+                _ => a.is_normal_form() && b.is_normal_form(),
+            }
+        }
+    }
+
+
+
     pub fn to_normal_form(self) -> Self {
-        println!("To normal form {}, self_type = {}, lower = {}", &self, self.get_type(),
-                 match &self {
+        let dbg_strings = (self.get_type(), match &self {
                      Var(_) => "Var".to_string(),
                      App(a, b) => a.get_type() + &b.get_type(),
                      Abs(a, b) => b.get_type(),
                  });
+
+        println!("To normal form {}, self_type = {}, lower = {}", &self, dbg_strings.0, dbg_strings.1);
+
         let temp = match self {
             // Entire form is one variable
             Term::Var(_)    => self,
@@ -154,7 +169,8 @@ impl Term {
 
             // case where lambda but not applied to anything,
             //  Keep β reducing, but don't need to use this abstraction
-            Term::Abs(_, a) => a.to_normal_form(),
+            //  Make sure to stay an abstraction though
+            Term::Abs(c, a) => Abs(c, Box::new(a.to_normal_form())),
 
 
             //    Application
@@ -205,10 +221,16 @@ impl Term {
                 (App(a1, a2), Var(c2)) =>
                     App(Box::new(
                         App(
-                            Box::new(a1.to_normal_form()),
-                            Box::new(a2.to_normal_form())
-                        )), 
-                        Box::new(Var(c2))),
+                            a1,
+                            a2
+                        )),
+                        Box::new(Var(c2))).to_normal_form(),
+                    //App(Box::new(
+                    //    App(
+                    //        Box::new(a1.to_normal_form()),
+                    //        Box::new(a2.to_normal_form())
+                    //    ).to_normal_form()), 
+                    //    Box::new(Var(c2))),
 
                 (App(a1, a2), Abs(c2, abs2)) =>
                     App(Box::new(
@@ -232,18 +254,18 @@ impl Term {
                 
             },
         };
-        println!("Now is {}", &temp);
+        println!("Now is {}, self_type = {}, lower = {}", &temp, dbg_strings.0, dbg_strings.1);
         temp
     }
 
 
     fn strict_substitute(self, sub: Substitution) -> Self {
-        println!("Substitg {} in {}, type {}", &sub, &self, 
-                 match &self {
+        let dbg_str = match &self {
                      Var(_) => "Var",
                      App(_, _) => "App",
                      Abs(_, _) => "Abs",
-                 });
+        };
+        println!("Substitg {} in {}, type {}", &sub, &self, dbg_str);
         let saved_copy = match self {
             Term::Var(c) => match sub.to_replace == c {
                 true  => sub.replace_with,
@@ -253,7 +275,7 @@ impl Term {
             Term::App(a, b) => App(
                 Box::new(a.strict_substitute(sub.clone())),
                 Box::new(b.strict_substitute(sub)),
-                ),
+                ).to_normal_form(),
 
             Term::Abs(c, a) => match sub.replace_with.free_vars().contains(&c) {
 
@@ -264,13 +286,18 @@ impl Term {
                 }).strict_substitute(sub),
 
                 false => match c == sub.to_replace {
+                    // Stop substituting because tighter binding scope
+                    //  Still need to normalize
                     true  => a.strict_substitute(sub),
-                    false => a.strict_substitute(sub),
+
+                    // Some other variable, so still in scope and
+                    // isn't at risk of capturing. Keep replacing here
+                    false => Abs(c, Box::new(a.strict_substitute(sub))),
                 }
             },
 
         };
-        println!("Result: {}", &saved_copy);
+        println!("Result: {}, type was {}", &saved_copy, dbg_str);
         saved_copy
     }
         

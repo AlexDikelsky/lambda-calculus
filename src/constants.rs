@@ -17,10 +17,16 @@ pub fn var_b() -> Box<Term> {
 
 pub fn var_c() -> Box<Term> {
     gen('c')
-}
+} 
 
+pub fn var_u() -> Box<Term> {
+    gen('u')
+}
+pub fn var_v() -> Box<Term> {
+    gen('v')
+}
 pub fn var_w() -> Box<Term> {
-    gen('x')
+    gen('w')
 }
 
 pub fn var_x() -> Box<Term> {
