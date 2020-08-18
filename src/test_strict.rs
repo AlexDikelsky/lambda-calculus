@@ -139,10 +139,3 @@ fn rename_3() {
 
 
 
-#[test]
-fn test_and() {
-    let flsfls = apply(apply(and(), fls()), fls());
-    let norm = flsfls.to_normal_form();
-    dbg!(&norm);
-    assert!(norm == fls());
-}

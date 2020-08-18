@@ -9,6 +9,9 @@ mod subsitutions;
 mod combinators;
 mod letter_list;
 mod aux;
+mod test_and;
+mod test_or;
+mod test_not;
 
 use crate::terms::Term;
 use crate::terms::Term::Var;

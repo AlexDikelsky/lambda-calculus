@@ -160,8 +160,8 @@ impl Term {
                      Abs(a, b) => format!("{}", b.is_normal_form()),
                  });
 
-        //println!("To normal form {}, self = {}, lower = {}", &self, dbg_strings.0, dbg_strings.1);
-        println!("To normal {}", &self);
+        println!("To normal form {}, self = {}, lower = {}", &self, dbg_strings.0, dbg_strings.1);
+        //println!("To normal {}", &self);
 
         let temp = match self {
             // Entire form is one variable
@@ -191,7 +191,9 @@ impl Term {
                 (true,  true ) => {
                     match *a {
                         // If the first term is an abstraction, then it can be reduced again
-                        Abs(c, a1) => Abs(c, a1).strict_substitute(Substitution {
+                        //   This means that the first thing shouldn't be the same
+                        //   abstraction anymore
+                        Abs(c, inner_abs) => inner_abs.strict_substitute(Substitution {
                             to_replace: c,
                             replace_with: *b,
                         }),
@@ -207,7 +209,8 @@ impl Term {
                     Var(_) => panic!("Variable {} not recognized as normal", a),
 
                     //Substitute b for a's bound
-                    Abs(c, a1) => Abs(c, a1).strict_substitute(Substitution {
+                    //   Use B as the abstraction to replace for c
+                    Abs(c, inner_abs) => inner_abs.strict_substitute(Substitution {
                         to_replace: c,
                         replace_with: *b
                     }),
@@ -217,74 +220,6 @@ impl Term {
                 },
                 (false, false) => apply(a.to_normal_form(), b.to_normal_form()),
             }
-            //Term::App(a, b) => match (*a, *b) {
-            //    (Var(c1), Var(c2)) => App(Box::new(Var(c1)), 
-            //                              Box::new(Var(c2))),
-            //    (Var(c1), Abs(abs_c, abs_term)) =>
-            //        App(Box::new(Var(c1)),
-            //            Box::new(Abs(abs_c, abs_term))),
-
-            //    (Var(c1), App(a1, a2)) =>
-            //        App(Box::new(Var(c1)),
-            //            Box::new(App(Box::new(a1.to_normal_form()),
-            //                         Box::new(a2.to_normal_form())))),
-
-
-            //    //All of these are some variation on substitute with the second term
-            //    // I think with an inner match this could be simplified
-            //    (Abs(c1, inner_abs), Var(c2)) => Abs(c1, inner_abs) // abstraction term
-            //        .strict_substitute(Substitution { 
-            //            to_replace: c1,
-            //            replace_with: Var(c2),
-            //        }),
-
-            //    (Abs(c1, inner_abs1), Abs(c2, inner_abs2)) => Abs(c1, inner_abs1)
-            //        .strict_substitute(Substitution {
-            //            to_replace: c1,
-            //            replace_with: Abs(c2, inner_abs2),
-            //        }),
-
-            //    (Abs(c1, inner_abs), App(a1, a2)) => Abs(c1, inner_abs)
-            //        .strict_substitute(Substitution {
-            //            to_replace: c1,
-            //            replace_with: App(a1, a2)
-            //        }),
-
-            //    (App(a1, a2), Var(c2)) =>
-            //        App(Box::new(
-            //            App(
-            //                a1,
-            //                a2
-            //            )),
-            //            Box::new(Var(c2))).to_normal_form(),
-            //        //App(Box::new(
-            //        //    App(
-            //        //        Box::new(a1.to_normal_form()),
-            //        //        Box::new(a2.to_normal_form())
-            //        //    ).to_normal_form()), 
-            //        //    Box::new(Var(c2))),
-
-            //    (App(a1, a2), Abs(c2, abs2)) =>
-            //        App(Box::new(
-            //            App(
-            //                Box::new(a1.to_normal_form()),
-            //                Box::new(a2.to_normal_form())
-            //            )), 
-            //            Box::new(
-            //                Abs(c2, abs2))),
-
-            //    (App(a1, a2), App(b1, b2)) =>
-            //        App(
-            //            Box::new(App(
-            //                Box::new(a1.to_normal_form()),
-            //                Box::new(a2.to_normal_form())
-            //            )), 
-            //            Box::new(App(
-            //                Box::new(b1.to_normal_form()),
-            //                Box::new(b2.to_normal_form())
-            //            ))),
-            //    
-            //},
         };
         //println!("Now is {}, self_type = {}, lower = {}", &temp, dbg_strings.0, dbg_strings.1);
         //println!("Now is {}", &temp);
@@ -299,6 +234,7 @@ impl Term {
                      Abs(_, _) => "Abs",
         };
         //println!("Substitg {} in {}, type {}", &sub, &self, dbg_str);
+        println!("Substitg {} in {}", &sub, &self);
         let saved_copy = match self {
             Term::Var(c) => match sub.to_replace == c {
                 true  => sub.replace_with,
@@ -312,7 +248,7 @@ impl Term {
 
             Term::Abs(c, a) => match sub.replace_with.free_vars().contains(&c) {
 
-                // Possible capture, use π untill I can fix this
+                // Var would be captured
                 true  => {
                     let new_letter = a.next_unused_var_name();
                     //println!("Swapping bound var {} with {}", c, new_letter);
@@ -328,11 +264,11 @@ impl Term {
                 false => match c == sub.to_replace {
                     // Stop substituting because tighter binding scope
                     //  Still need to normalize
-                    true  => a.strict_substitute(sub),
+                    true  => abstraction(c, *a),
 
                     // Some other variable, so still in scope and
                     // isn't at risk of capturing. Keep replacing here
-                    false => Abs(c, Box::new(a.strict_substitute(sub))),
+                    false => abstraction(c, a.strict_substitute(sub)),
                 }
             },
 

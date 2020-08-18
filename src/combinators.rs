@@ -33,6 +33,22 @@ pub fn and() -> Term {
 
 }
 
+// λb.λc. a tru fls
+pub fn or() -> Term {
+    abstraction('a',
+        abstraction('b',
+            apply(
+                apply(
+                    Var('a'), tru()),
+                Var('b'))))
+}
+
+// λx. fls tru
+pub fn not() -> Term {
+    abstraction('x',
+        apply(fls(), tru()))
+}
+
 // Switch first and second arg
 //   K in combinatory logic
 #[allow(non_snake_case)]
