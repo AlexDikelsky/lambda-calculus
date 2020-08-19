@@ -84,3 +84,7 @@ pub fn swap() -> Term {
 pub fn omega_parts() -> Term {
     abstraction('x', apply( Var('x'), Var('x'),))
 }
+
+pub fn omega() -> Term {
+    apply(omega_parts(), omega_parts())
+}

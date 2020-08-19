@@ -1,0 +1,15 @@
+use std::str::FromStr;
+use crate::terms::Term::{Var, Abs, App};
+use crate::terms::Term;
+
+grammar;
+
+pub Term: Term = {
+    <v:Character> => Var(v),
+    "(" "λ" <c:Character> "." <a:Term> ")" => Abs(c, Box::new(a)),
+    "(" <a:Term> <b:Term> ")"    => App(Box::new(a), Box::new(b)),
+}
+
+Character: char = {
+    <a:r"[a-z]"> => char::from_str(a).unwrap()
+};

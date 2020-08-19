@@ -3,4 +3,5 @@ pub mod excercises;
 pub mod lazy;
 pub mod misc;
 pub mod strict;
+pub mod parsing;
 

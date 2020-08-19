@@ -1,5 +1,8 @@
 use std::fmt;
 
+use std::collections::HashMap;
+use std::collections::HashSet;
+
 use crate::terms::Term::Var;
 use crate::terms::Term::Abs;
 use crate::terms::Term::App;
@@ -307,29 +310,53 @@ impl Term {
 
         saved_copy
     }
-        
-    pub fn to_reg_names(self) -> Self {
-        //let dbg_str = match &self {
-        //             Var(_) => "Var",
-        //             App(_, _) => "App",
-        //             Abs(_, _) => "Abs",
-        //};
-        //dbg!(dbg_str);
+
+    pub fn to_reg_names(self, name_ctx: HashMap<char, char>) -> Self {
         match self {
-            Var(_) => Var(self.next_unused_var_name()),
-            Abs(c, a) => {
-                let new_letter = a.next_unused_var_name();
-                // Return a new abstraction of the new letters, and make
-                // all subterms regular as well
-                abstraction(new_letter, a.strict_substitute(Substitution {
-                    to_replace: c,
-                    replace_with: Var(new_letter),
-                    debug: false,
-                }).to_reg_names())
+            Var(c) => match name_ctx.get(&c) {
+                Some(x) => Var(*x),
+                None    => Var(c),
             },
-            App(a, b) => apply(a.to_reg_names(), b.to_reg_names()),
+            Abs(c, a) => match name_ctx.get(&c) {
+                Some(x) => abstraction(*x, a.to_reg_names(name_ctx)),
+                None    => abstraction(c, *a),
+            },
+            App(a, b) => apply(a.to_reg_names(name_ctx.clone()), b.to_reg_names(name_ctx)),
         }
     }
+
+        
+    //// This really doesn't work for a few reasons
+    //pub fn to_reg_names(self) -> Self {
+    //    //let dbg_str = match &self {
+    //    //             Var(_) => "Var",
+    //    //             App(_, _) => "App",
+    //    //             Abs(_, _) => "Abs",
+    //    //};
+    //    //dbg!(dbg_str);
+    //    match self {
+    //        Var(_) => Var(self.next_unused_var_name()),
+    //        Abs(c, a) => {
+
+    //            // Store a location where a var of 'c' was used, respecting scope
+    //            let loc = a.find_loc(c);
+
+    //            // Replace all the lower terms
+    //            let fixed_a = a.to_reg_names();
+
+    //            // Get the first letter that hasn't been used in that
+    //            let new_letter = fixed_a.next_unused_var_name();
+
+    //            // Make an abstraction with the new letter, and 
+    //            abstraction(new_letter, fixed_a.strict_substitute(Substitution {
+    //                to_replace: c,
+    //                replace_with: Var(new_letter),
+    //                debug: true,
+    //            }))
+    //        },
+    //        App(a, b) => apply(a.to_reg_names(), b.to_reg_names()),
+    //    }
+    //}
 
     pub fn equal_names_matter(self, other: Term) -> bool {
         match (self, other) {
@@ -340,13 +367,18 @@ impl Term {
         }
     }
 
+    pub fn hash_of_free_vars(&self) -> HashMap<char, char> {
+        self.get_all_var_names().into_iter()
+            .zip(LETTERS.iter().map(|x| *x)).collect()
+    }
+
 }
 
 impl PartialEq for Term {
     fn eq(&self, other: &Self) -> bool {
         //This could be much faster and memory intensive if you don't clone
-        let s = self.clone().to_reg_names();
-        let o = other.clone().to_reg_names();
+        let s = self.clone().to_reg_names(self.hash_of_free_vars());
+        let o = other.clone().to_reg_names(other.hash_of_free_vars());
 
         dbg!(&s, &o);
         s.equal_names_matter(o)
