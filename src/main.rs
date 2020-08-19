@@ -6,18 +6,18 @@ mod letter_list;
 mod aux;
 mod tests;
 
-use crate::terms::Term;
-use crate::terms::Term::Var;
-use crate::terms::Term::Abs;
-use crate::terms::Term::App;
-use crate::combinators::tru;
-use crate::combinators::and;
-use crate::combinators::fls;
-use crate::combinators::omega_parts;
-use crate::combinators::id;
-use crate::combinators::xor;
-use crate::aux::apply;
-use crate::aux::abstraction;
+//use crate::terms::Term;
+//use crate::terms::Term::Var;
+//use crate::terms::Term::Abs;
+//use crate::terms::Term::App;
+//use crate::combinators::bool_combinators::tru;
+//use crate::combinators::bool_combinators::and;
+//use crate::combinators::bool_combinators::fls;
+//use crate::combinators::omega_parts;
+//use crate::combinators::one_arg_combinators::id;
+//use crate::combinators::xor;
+//use crate::aux::apply;
+//use crate::aux::abstraction;
 
 #[macro_use] extern crate lalrpop_util;
 lalrpop_mod!(pub lambda);
@@ -29,12 +29,13 @@ lalrpop_mod!(pub lambda);
 //    //dbg!(x);
 //}
 
+fn main() {}
 
-fn main() {
-    dbg!(lambda::TermParser::new().parse("u").is_ok());
-    dbg!(lambda::TermParser::new().parse("(λu.u)").is_ok());
-    dbg!(lambda::TermParser::new().parse("u"));
-}
+//fn main() {
+//    dbg!(lambda::TermParser::new().parse("u").is_ok());
+//    dbg!(lambda::TermParser::new().parse("(λu.u)").is_ok());
+//    dbg!(lambda::TermParser::new().parse("u"));
+//}
 
 //fn main() {
 //

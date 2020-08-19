@@ -12,52 +12,68 @@ use crate::combinators::two_arg_combinators::swap;
 
 use crate::aux::apply;
 use crate::aux::abstraction;
+use crate::aux::parse;
 
 #[test]
-fn ei() {
+fn parse_ei() {
     let a =
         abstraction(
             'x', abstraction('y', apply(apply(Var('x'), Var('y')), Var('y'))));
     let b = apply(a, Var('u'));
     let c = apply(b, Var('v'));
 
-    let real = apply(apply(Var('u'), Var('v')), Var('v'));
+    let parsed = parse("(((λx.(λy.((xy)y)))u)v)").unwrap();
 
-    assert!(c.to_normal_form() == real);
+    assert!(c == parsed);
 }
 
+
 #[test]
-fn eii() {
+fn parse_eii() {
     let a = swap();
     let b = apply(a, apply(Var('u'), Var('v')));
 
     let c = apply(apply(b, Var('z')), Var('w'));
 
-    let real = 
-        apply(apply(Var('z'), apply(Var('u'), Var('v'))), Var('w'));
+    let parsed = parse("((((λx.(λy.(yx)))(uv))z)w)").unwrap();
 
-    assert!(c.to_normal_form() == real);
+    assert!(c == parsed);
+
 }
-
 #[test]
-fn eiii() {
+fn parse_eiii() {
     let a = apply(tru(), id());
 
-    let real = fls();
+    let parsed = parse("((λx.(λy.x))(λu.u))").unwrap();
 
-    assert!(a.to_normal_form() == real);
+    assert!(a == parsed);
 }
 
 #[test]
-fn eiv() {
+fn parse_eiv() {
     let inner = apply(apply(Var('x'), Var('z')), apply(Var('y'), Var('z')));
     let a = 
         abstraction('x', abstraction('y', abstraction('z', inner)));
+    let b = apply(a.clone(), tru());
 
-    let b = apply(a, tru()).to_normal_form();
+    let strinner = "((xz)(yz))";
+    let stra = &format!("(λx.(λy.(λz.{})))", strinner);
 
-    println!("{}", &b);
-    println!("{}", fls());
-    assert!(b == fls());
+    assert!(parse(&stra).unwrap() == a);
+
+    let strb = "(λu.(λv.u))";
+
+    assert!(parse(&strb).unwrap() == tru());
+
+    let concated = format!("({}{})", stra, strb);
+
+    let finalized = parse(&concated).unwrap();
+
+    println!("{}\n{}", &finalized, &b);
+
+    //let parsed = parse("((λx.(λy.(λz.((xy)(yz)))))(λu.(λv.u)))").unwrap();
+
+    assert!(finalized == b);
 }
+
 

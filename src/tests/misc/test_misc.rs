@@ -4,9 +4,9 @@ use crate::terms::Term;
 use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::subsitutions::Substitution;
-use crate::combinators::tru;
-use crate::combinators::fls;
-use crate::combinators::and;
+use crate::combinators::bool_combinators::tru;
+use crate::combinators::bool_combinators::fls;
+use crate::combinators::bool_combinators::and;
 
 #[test]
 fn test_free_vars() {

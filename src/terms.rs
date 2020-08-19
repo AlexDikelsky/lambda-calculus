@@ -377,6 +377,7 @@ impl Term {
 impl PartialEq for Term {
     fn eq(&self, other: &Self) -> bool {
         //This could be much faster and memory intensive if you don't clone
+        //Doesn't work for some cases (see parse exivv)
         let s = self.clone().to_reg_names(self.hash_of_free_vars());
         let o = other.clone().to_reg_names(other.hash_of_free_vars());
 

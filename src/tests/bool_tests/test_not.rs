@@ -4,10 +4,10 @@ use crate::terms::Term;
 use crate::terms::Term::Abs;
 use crate::terms::Term::App;
 use crate::subsitutions::Substitution;
-use crate::combinators::id;
-use crate::combinators::tru;
-use crate::combinators::fls;
-use crate::combinators::not;
+use crate::combinators::one_arg_combinators::id;
+use crate::combinators::bool_combinators::tru;
+use crate::combinators::bool_combinators::fls;
+use crate::combinators::bool_combinators::not;
 
 use crate::aux::apply;
 use crate::aux::abstraction;

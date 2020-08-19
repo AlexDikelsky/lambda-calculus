@@ -1,24 +1,19 @@
 #![allow(unused_imports)]
-use crate::combinators::tru;
-use crate::combinators::and;
-use crate::combinators::fls;
-use crate::combinators::omega;
-use crate::combinators::omega_parts;
-use crate::combinators::id;
+use crate::combinators::bool_combinators::tru;
+use crate::combinators::bool_combinators::and;
+use crate::combinators::bool_combinators::fls;
+use crate::combinators::endless_combinators::omega;
+use crate::combinators::endless_combinators::omega_parts;
+use crate::combinators::one_arg_combinators::id;
 use crate::aux::apply;
 use crate::aux::abstraction;
 use crate::terms;
-use crate::lalrpop_util;
 
-use crate::lambda::TermParser;
-
-fn parse(s: &str) -> Result<terms::Term, lalrpop_util::ParseError<usize, lalrpop_util::lexer::Token<'_>, &'static str>> {
-    TermParser::new().parse(s)
-}
+use crate::aux::parse;
 
 #[test]
 fn identity() {
-    let parsed = TermParser::new().parse("(λx.x)");
+    let parsed = parse("(λx.x)");
 
     dbg!(&parsed);
     assert!(parsed.unwrap() == id());
@@ -38,6 +33,14 @@ fn test_omega() {
 
     assert!(parsed_full.unwrap() == omega());
 
-    assert!(false);
 }
 
+#[test]
+fn bools() {
+    let ltrue = parse("(λx.(λy.x))");
+    assert!(ltrue.unwrap() == tru());
+
+    let lfalse = parse("(λx.(λy.y))");
+    assert!(lfalse.unwrap() == fls());
+}
+    
