@@ -49,8 +49,20 @@ pub fn not() -> Term {
         apply(apply(Var('x'), fls()), tru()))
 }
 
-// λa.λb. or (and a b) (not (and a b))
 pub fn xor() -> Term {
+    let a_and_b = apply(apply(and(), Var('a')), Var('b'));
+    let not_a_and_not_b = 
+        apply(apply(and(), apply(not(), Var('a'))), apply(not(), Var('b')));
+
+    apply(apply(or(), a_and_b), not_a_and_not_b)
+}
+
+
+
+
+// Incorrect xor operator
+// λa.λb. or (and a b) (not (and a b))
+pub fn wrong_xor() -> Term {
     let aandb = apply(apply(and(), Var('a')), Var('b'));
     
     abstraction('a',
@@ -62,9 +74,7 @@ pub fn xor() -> Term {
 }
 
 // Switch first and second arg
-//   K in combinatory logic
-#[allow(non_snake_case)]
-pub fn K() -> Term {
+pub fn swap() -> Term {
     abstraction('x',
                 abstraction('y',
                             apply(Var('y'), Var('x'))))

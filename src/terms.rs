@@ -8,6 +8,7 @@ use crate::letter_list::LETTERS;
 use crate::aux::apply;
 use crate::aux::abstraction;
 
+//#[derive(PartialEq)]
 pub enum Term {
     Var(char),
     Abs(char, Box<Term>),
@@ -185,6 +186,9 @@ impl Term {
             // App, Var => Keep looking in App
             // App, Abs => Keep looking in both
             // App, App => Keep looking in both
+            //
+            //
+            // All of these cases - 1 need to normalize whatever input they generated
 
             App(a, b) => match (a.is_normal_form(), b.is_normal_form()) {
                 (true,  true ) => {
@@ -195,7 +199,7 @@ impl Term {
                         Abs(c, inner_abs) => inner_abs.strict_substitute(Substitution {
                             to_replace: c,
                             replace_with: *b,
-                            debug: true,
+                            debug: false,
                         }).to_normal_form(),
 
                         // Otherwise, return same thing because both are normal
@@ -215,18 +219,19 @@ impl Term {
                     Abs(c, inner_abs) => inner_abs.strict_substitute(Substitution {
                         to_replace: c,
                         replace_with: b.to_normal_form(),
-                        debug: true,
-                    }),
+                        debug: false,
+                    }).to_normal_form(),
                     _ => apply(*a, b.to_normal_form())
                 },
                 (false, true ) => match *a {
                     //Substitute b for a's bound
                     //   Use B as the abstraction to replace for c
+                    //   This will probably result in a non-normal form, so run it again
                     Abs(c, inner_abs) => inner_abs.strict_substitute(Substitution {
                         to_replace: c,
                         replace_with: *b,
-                        debug: true,
-                    }),
+                        debug: false,
+                    }).to_normal_form(),
 
                     // First thing could become an abstraction, so you need to
                     // keep checking
@@ -303,16 +308,24 @@ impl Term {
         saved_copy
     }
         
-    fn to_reg_names(self) -> Self {
+    pub fn to_reg_names(self) -> Self {
+        //let dbg_str = match &self {
+        //             Var(_) => "Var",
+        //             App(_, _) => "App",
+        //             Abs(_, _) => "Abs",
+        //};
+        //dbg!(dbg_str);
         match self {
             Var(_) => Var(self.next_unused_var_name()),
             Abs(c, a) => {
                 let new_letter = a.next_unused_var_name();
+                // Return a new abstraction of the new letters, and make
+                // all subterms regular as well
                 abstraction(new_letter, a.strict_substitute(Substitution {
                     to_replace: c,
                     replace_with: Var(new_letter),
                     debug: false,
-                }))
+                }).to_reg_names())
             },
             App(a, b) => apply(a.to_reg_names(), b.to_reg_names()),
         }
@@ -332,7 +345,11 @@ impl Term {
 impl PartialEq for Term {
     fn eq(&self, other: &Self) -> bool {
         //This could be much faster and memory intensive if you don't clone
-        self.clone().to_reg_names().equal_names_matter(other.clone().to_reg_names())
+        let s = self.clone().to_reg_names();
+        let o = other.clone().to_reg_names();
+
+        dbg!(&s, &o);
+        s.equal_names_matter(o)
 
     }
 }

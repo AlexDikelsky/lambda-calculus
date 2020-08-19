@@ -8,7 +8,7 @@ use crate::combinators::id;
 use crate::combinators::tru;
 use crate::combinators::fls;
 use crate::combinators::and;
-use crate::combinators::K;
+use crate::combinators::swap;
 
 use crate::aux::apply;
 use crate::aux::abstraction;
@@ -40,7 +40,7 @@ fn b() {
     // reduces to vu
     dbg!("(λx.λy.yx)uv");
     let x = 
-        apply(apply(K(), Var('u')), Var('v'));
+        apply(apply(swap(), Var('u')), Var('v'));
 
     let y = x.to_normal_form();
     let real = apply(Var('v'), Var('u'));
@@ -194,7 +194,7 @@ fn f() {
 
     dbg!("(λx.λy.yx)u");
     let b =
-        apply(K(),
+        apply(swap(),
             Var('u')).to_normal_form();
 
     dbg!(&b);
@@ -203,7 +203,7 @@ fn f() {
 
     let c =
         apply(
-            K(),
+            swap(),
             Var('x')).to_normal_form();
 
     dbg!(&c);
