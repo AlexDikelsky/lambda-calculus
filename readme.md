@@ -12,6 +12,6 @@ on-the-fly renaming rather than De Brujin indices.
 
 [1] https://plato.stanford.edu/entries/lambda-calculus/
 
-[2] doc.rust-lang.org/stable/book/ch06-01-defining-an-enum.html
+[2] https://doc.rust-lang.org/stable/book/ch06-01-defining-an-enum.html
 
-[3] cis.upenn.edu/~bcpierce/tapl/
+[3] https://www.cis.upenn.edu/~bcpierce/tapl/
