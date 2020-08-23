@@ -10,8 +10,8 @@ This program uses lalrpop to parse lambda terms. It is based off of the
 implementation used in "Types and Programming Languages" [3], but uses symbolic
 on-the-fly renaming rather than De Brujin indices.
 
-[1] `wikipedia.org/wiki/Lambda_calculus`
+[1] https://plato.stanford.edu/entries/lambda-calculus/
 
-[2] `doc.rust-lang.org/stable/book/ch06-01-defining-an-enum.html`
+[2] doc.rust-lang.org/stable/book/ch06-01-defining-an-enum.html
 
-[3] `cis.upenn.edu/~bcpierce/tapl/`
+[3] cis.upenn.edu/~bcpierce/tapl/
