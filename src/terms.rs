@@ -1,5 +1,7 @@
 use std::fmt;
 
+const DEBUG_NORMAL: bool = false;
+
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -163,8 +165,10 @@ impl Term {
                      Abs(a, b) => format!("{}", b.is_normal_form()),
                  });
 
-        println!("To normal form {}, self = {}, lower = {}", &self, dbg_strings.0, dbg_strings.1);
-        //println!("To normal {}", &self);
+        if DEBUG_NORMAL {
+            println!("To normal form {}, self = {}, lower = {}", &self, dbg_strings.0, dbg_strings.1);
+            //println!("To normal {}", &self);
+        }
 
         let temp = match self {
             // Entire form is one variable
@@ -247,8 +251,10 @@ impl Term {
                 (false, false) => apply(a.to_normal_form(), b.to_normal_form()).to_normal_form(),
             }
         };
-        println!("Now is {}, self_type = {}, lower = {}", &temp, dbg_strings.0, dbg_strings.1);
-        //println!("Now is {}", &temp);
+        if DEBUG_NORMAL {
+            println!("Now is {}, self_type = {}, lower = {}", &temp, dbg_strings.0, dbg_strings.1);
+            //println!("Now is {}", &temp);
+        }
         temp
     }
 
@@ -282,7 +288,7 @@ impl Term {
                     // This works by swapping the bounds of the current abstraction
                     // to a new value, then continuing the substitution as normal
                     let new_letter = a.next_unused_var_name();
-                    println!("Swapping bound var {} with {}", c, new_letter);
+                    if DEBUG_NORMAL { println!("Swapping bound var {} with {}", c, new_letter) };
                     abstraction(
                         new_letter, 
                         a.strict_substitute(Substitution {

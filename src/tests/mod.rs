@@ -4,4 +4,4 @@ pub mod lazy;
 pub mod misc;
 pub mod strict;
 pub mod parsing;
-
+pub mod church_numerals;

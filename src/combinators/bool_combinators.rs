@@ -44,11 +44,8 @@ pub fn not() -> Term {
         apply(apply(Var('x'), fls()), tru()))
 }
 
+// λa.λb.a(¬b)b
 pub fn xor() -> Term {
-    let a_and_b = apply(apply(and(), Var('a')), Var('b'));
-    let not_a_and_not_b = 
-        apply(apply(and(), apply(not(), Var('a'))), apply(not(), Var('b')));
-
-    apply(apply(or(), a_and_b), not_a_and_not_b)
+    abstraction('a', abstraction('b', apply(apply(Var('a'), apply(not(), Var('b'))), Var('b'))))
 }
 
