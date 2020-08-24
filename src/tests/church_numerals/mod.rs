@@ -11,3 +11,4 @@
 //You should have recieved a copy of the GNU General Public License
 //along with this program. If not, see <https://www.gnu.org/licenses/>
 pub mod successor;
+pub mod even_or_odd;

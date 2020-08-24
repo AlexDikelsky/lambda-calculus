@@ -10,8 +10,11 @@
 //
 //You should have recieved a copy of the GNU General Public License
 //along with this program. If not, see <https://www.gnu.org/licenses/>
+
 use crate::aux::{ apply, abstraction, parse };
 use crate::terms::Term;
+use crate::terms::Term::{ Var };
+use crate::combinators::bool_combinators::{ not, tru, fls };
 
 pub fn c0() -> Term {
     parse("(λs.(λn.n))").unwrap()
@@ -22,22 +25,18 @@ pub fn succ() -> Term {
     parse("(λx.(λs.(λn.(s((xs)n)))))").unwrap()
 }
 
-pub fn plus() -> Term {
-    parse("(λm.(λn.(λs.(λz.(((m s) ((n s) z)))))))").unwrap()
+// Since a number is the first function composed to the second
+// n times, you can check the parity of the number by making
+// the first function negation and the second function true
+pub fn is_even() -> Term {
+    abstraction(
+        'x',
+        apply(apply(Var('x'), not()), tru()))
 }
 
-pub fn iszro() -> Term {
-    let f = "(λx.(λy.y))";
-    let t = "(λx.(λy.x))";
-    let s = format!("(λm.((m{}) {})", f, t);
-
-    parse(&s).unwrap()
+// Similar here, but start with fls rather than tru.
+pub fn is_odd() -> Term {
+    abstraction(
+        'x',
+        apply(apply(Var('x'), not()), fls()))
 }
-
-//// Generate nth church numeral
-//pub fn cn(n: usize) -> Term {
-//    match cn <= 0 {
-//        true  => c0(),
-//        false => succ(cn(n-1)),
-//    }
-//}
