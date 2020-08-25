@@ -45,18 +45,25 @@ lalrpop_mod!(pub lambda);
 //}
 
 fn main() {
-    let a_to_b = parse("(λa.(λb.(ab)))").unwrap();
-    let one = apply(succ(), c0()).to_normal_form();
-    let two = apply(succ(), one.clone()).to_normal_form();
-    let three = apply(succ(), two.clone()).to_normal_form();
-    let four = apply(succ(), three.clone()).to_normal_form();
-    let five = apply(succ(), four.clone()).to_normal_form();
-    let six = apply(succ(), five.clone()).to_normal_form();
+    let b = apply(succ2(), c0()).to_normal_form();
+    dbg!(&b);
+    let b = apply(succ2(), b).to_normal_form();
+    dbg!(&b);
+    let b = apply(succ2(), b).to_normal_form();
+    dbg!(&b);
 
-    let a = six.clone();
-    let b = six.clone();
+    //let a_to_b = parse("(λa.(λb.(ab)))").unwrap();
+    //let one = apply(succ(), c0()).to_normal_form();
+    //let two = apply(succ(), one.clone()).to_normal_form();
+    //let three = apply(succ(), two.clone()).to_normal_form();
+    //let four = apply(succ(), three.clone()).to_normal_form();
+    //let five = apply(succ(), four.clone()).to_normal_form();
+    //let six = apply(succ(), five.clone()).to_normal_form();
 
-    println!("{}", apply(apply(a_to_b.clone(), a.clone()), b.clone()).to_normal_form());
+    //let a = six.clone();
+    //let b = six.clone();
+
+    //println!("{}", apply(apply(a_to_b.clone(), a.clone()), b.clone()).to_normal_form());
 
 
 }
